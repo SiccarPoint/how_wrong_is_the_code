@@ -2,7 +2,7 @@
 
 import requests, json, re
 import numpy as np
-from matplotlib.pyplot import plot, figure, show
+from matplotlib.pyplot import plot, figure, show, xlabel, ylabel
 from datetime import datetime
 from requests.auth import HTTPDigestAuth
 
@@ -157,7 +157,7 @@ def is_commit_bug(message_headline, message):
     return found
 
 
-headers = {'Authorization': "Bearer "}
+headers = {'Authorization': "Bearer TOKEN_HERE"}
 
 data = get_data(10, "physics", headers)
 for (rep_data, name, creation_date, last_push_date, commit_page_data,
@@ -198,3 +198,5 @@ for (rep_data, name, creation_date, last_push_date, commit_page_data,
         (time-convert_datetime(creation_date)).seconds for time in dtimes[1:]
     ]
     plot(from_start_time, np.log(commit_rate[1:]), 'x')
+    xlabel('commit rate (per s)')
+    ylabel('log(time since repo creation (s))')
