@@ -55,11 +55,14 @@ for rep in aquired_repos:
 
 
 def convert_datetime(datetime_str):
-    yr = int(datetime_str[:4])
-    mo = int(datetime_str[5:7])
-    da = int(datetime_str[8:10])
-    hr = int(datetime_str[11:13])
-    mi = int(datetime_str[14:16])
-    se = int(datetime_str[17:19])
-    dt = datetime(yr, mo, da, hr, mi, se)
+    if datetime_str is not None:
+        yr = int(datetime_str[:4])
+        mo = int(datetime_str[5:7])
+        da = int(datetime_str[8:10])
+        hr = int(datetime_str[11:13])
+        mi = int(datetime_str[14:16])
+        se = int(datetime_str[17:19])
+        dt = datetime(yr, mo, da, hr, mi, se)
+    else:
+        dt = None
     return dt
