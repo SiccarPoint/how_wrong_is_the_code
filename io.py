@@ -1,13 +1,53 @@
 # remember to make an HTTPDigestAuth object!
 
-import requests
+import requests, json
 from requests.auth import HTTPDigestAuth
 
-# auth = HTTPDigestAuth('User', 'key')
+# headers = {'Authorization': 'Bearer KEY'}
 
-r = requests.get('https://api.github.com/repositories', params={'since': 100},
-                 auth=auth)
-print(r.json()[0]['commits_url'])
+q = '''query {
+  search(first: 3, type: REPOSITORY, query: "doi.org/") {
+    edges {
+      node {
+        ... on Repository {
+          nameWithOwner
+          ref(qualifiedName: "master") {
+            target {
+              ... on Commit {
+ #               id
+                history(first: 100) {
+                  pageInfo {
+                    hasNextPage
+                  }
+                  edges {
+                    node {
+                      author {
+                        name
+#                        email
+#                        date
+                      }
+                      pushedDate
+                      messageHeadline
+#                      oid
+                      message
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}'''
 
-rcommits = requests.get(r.json()[0]['commits_url'][:-6])
-print(r.json()[0].keys())
+r = requests.post('https://api.github.com/graphql', json={'query': q}, headers=headers)
+aquired_repos = r.json()['data']['search']['edges']
+
+for rep in aquired_repos:
+    rep_data = rep['node']
+    name = rep_data['nameWithOwner']
+    commit_page_data = rep_data['ref']['target']['history']
+    has_next_page = commit_page_data['hasNextPage']
+    commits = commit_page_data['edges']  # this is the list of <=100 commits
