@@ -1,6 +1,13 @@
 import re
-from io import convert_datetime
+from .io_test import convert_datetime
 from matplotlib.pyplot import plot, figure
+
+def first_commit_dtime(commits, is_next_page, override_next_page=False):
+    """
+    Returns the time of the first commit, or nothing if not the first batch
+    """
+    if not is_next_page or override_next_page:
+        return convert_datetime(commits[-1]['node']['pushedDate'])
 
 def yield_commits_data(commits):
     """
@@ -53,19 +60,39 @@ def is_commit_bug(message_headline, message):
         found = re.search(allposs, mess) or found
     return found
 
-# we should also be tracking BUG ISSUES
-
+# we should also be tracking BUG ISSUES, as can't see PR merges from off master
 
 dtimes = []
 times_bugs_fixed = []
+time_to_bug_fix = []
+commit_rate = []
+bug_fix_rate = []
+last_dtime = None
+last_bug_fix = None
+authors = set()
+firsttime = first_commit_dtime(commits, None, override_next_page=True)
 for auth, dtime, head, mess in yield_commits_data(commits):
+    authors.add(auth)
     isbug = is_commit_bug(head, mess)
+    print(isbug)
     if dtime is not None:
         dtimes.append(dtime)
+        if last_dtime is None:
+            commit_rate.append(None)
+        else:
+            commit_rate.append(1./(dtime - last_dtime).seconds)
         if isbug:
+            try:
+                bug_fix_rate.append(1./(dtime - last_bug_fix).seconds)
+            except TypeError:  # None
+                bug_fix_rate.append(None)
+            last_bug_fix = dtime
             times_bugs_fixed.append(dtime)
+            try:
+                time_to_bug_fix.append((dtime - firsttime).seconds)
+            except TypeError:
+                time_to_bug_fix.append(None)
+        last_dtime = dtime
 
 i = list(range(len(dtimes)))
-ibugs = list(range(len(times_bugs_fixed)))
 plot(dtimes, i)
-plot(times_bugs_fixed, ibugs)
