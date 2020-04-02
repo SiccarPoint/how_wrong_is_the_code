@@ -4,8 +4,6 @@ import requests, json
 from datetime import datetime
 from requests.auth import HTTPDigestAuth
 
-headers = {'Authorization': 'token 415f14b83d5b7fdf391ea60ad19ce9271b91b8db'}
-
 q = '''query($first: Int!, $query: String!){
   search(first: $first, type: REPOSITORY, query: $query) {
     edges {
