@@ -49,5 +49,5 @@ for rep in aquired_repos:
     rep_data = rep['node']
     name = rep_data['nameWithOwner']
     commit_page_data = rep_data['ref']['target']['history']
-    has_next_page = commit_page_data['hasNextPage']
+    has_next_page = commit_page_data['pageInfo']['hasNextPage']
     commits = commit_page_data['edges']  # this is the list of <=100 commits
