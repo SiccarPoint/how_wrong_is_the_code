@@ -44,7 +44,7 @@ q = '''query($first: Int!, $query: String!){
   }
 }'''
 
-def get_data(first, query):
+def get_data(first, query, headers):
 
     r = requests.post('https://api.github.com/graphql', json = {"query": q, "variables": {"first": first, "query": query}}, headers=headers)
     aquired_repos = r.json()['data']['search']['edges']
