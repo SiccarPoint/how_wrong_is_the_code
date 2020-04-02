@@ -169,7 +169,7 @@ for (rep_data, name, creation_date, last_push_date, commit_page_data, has_next_p
     for auth, dtime, head, mess in yield_commits_data(commits):
         authors.add(auth)
         isbug = is_commit_bug(head, mess)
-        print(isbug)
+        # print(isbug)
         if dtime is not None:
             dtimes.append(dtime)
             if last_dtime is None:
@@ -189,4 +189,5 @@ for (rep_data, name, creation_date, last_push_date, commit_page_data, has_next_p
             #     last_bug_fix = dtime
             last_dtime = dtime
 
-    plot(dtimes[1:], np.log(commit_rate[1:]))
+    from_start_time = [(time-convert_datetime(creation_date)).seconds for time in dtimes[1:]]
+    plot(from_start_time, np.log(commit_rate[1:]), 'x')
