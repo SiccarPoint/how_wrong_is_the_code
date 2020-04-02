@@ -68,7 +68,7 @@ def process_aquired_data(aquired_repos):
         dt_delta = dt_last_push-dt_start
 
         print(name + ":\t" +str(dt_delta) + "\t" +str(total_commits))
-        
+
 
         yield rep_data, name, creation_date, last_push_date, commit_page_data, has_next_page, commits
 

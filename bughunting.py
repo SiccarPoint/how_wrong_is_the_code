@@ -1,13 +1,21 @@
 import re
-from .io_test import convert_datetime
+import io
 from matplotlib.pyplot import plot, figure
+
+# convert_datetime = io.convert_datetime
 
 def first_commit_dtime(commits, is_next_page, override_next_page=False):
     """
     Returns the time of the first commit, or nothing if not the first batch
     """
     if not is_next_page or override_next_page:
-        return convert_datetime(commits[-1]['node']['pushedDate'])
+        lastpt = -1
+        while 1:
+            firsttime = convert_datetime(commits[lastpt]['node']['pushedDate'])
+            if firsttime is not None:
+                return firsttime
+            else:
+                lastpt -= 1
 
 def yield_commits_data(commits):
     """
@@ -70,7 +78,7 @@ bug_fix_rate = []
 last_dtime = None
 last_bug_fix = None
 authors = set()
-firsttime = first_commit_dtime(commits, None, override_next_page=True)
+firsttime = first_commit_dtime(commits, False, override_next_page=True)
 for auth, dtime, head, mess in yield_commits_data(commits):
     authors.add(auth)
     isbug = is_commit_bug(head, mess)
@@ -86,12 +94,12 @@ for auth, dtime, head, mess in yield_commits_data(commits):
                 bug_fix_rate.append(1./(dtime - last_bug_fix).seconds)
             except TypeError:  # None
                 bug_fix_rate.append(None)
-            last_bug_fix = dtime
             times_bugs_fixed.append(dtime)
             try:
                 time_to_bug_fix.append((dtime - firsttime).seconds)
             except TypeError:
                 time_to_bug_fix.append(None)
+            last_bug_fix = dtime
         last_dtime = dtime
 
 i = list(range(len(dtimes)))
