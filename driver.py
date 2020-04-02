@@ -48,7 +48,10 @@ q = '''query($first: Int!, $query: String!){
 
 def get_data(first, query, headers):
 
-    r = requests.post('https://api.github.com/graphql', json = {"query": q, "variables": {"first": first, "query": query}}, headers=headers)
+    r = requests.post('https://api.github.com/graphql',
+                      json = {"query": q,
+                              "variables": {"first": first, "query": query}},
+                      headers=headers)
     aquired_repos = r.json()['data']['search']['edges']
 
     return aquired_repos
@@ -72,7 +75,8 @@ def process_aquired_data(aquired_repos):
         print(name + ":\t" +str(dt_delta) + "\t" +str(total_commits))
 
 
-        yield rep_data, name, creation_date, last_push_date, commit_page_data, has_next_page, commits
+        yield (rep_data, name, creation_date, last_push_date, commit_page_data,
+               has_next_page, commits)
 
 def convert_datetime(datetime_str):
     try:
@@ -153,10 +157,11 @@ def is_commit_bug(message_headline, message):
     return found
 
 
-headers = {'Authorization': "Bearer 72037fb24283feb0ed9bfb26c8ea7e14d937d6b2"}
+headers = {'Authorization': "Bearer "}
 
 data = get_data(10, "physics", headers)
-for (rep_data, name, creation_date, last_push_date, commit_page_data, has_next_page, commits) in process_aquired_data(data):
+for (rep_data, name, creation_date, last_push_date, commit_page_data,
+     has_next_page, commits) in process_aquired_data(data):
     dtimes = []
     times_bugs_fixed = []
     time_to_bug_fix = []
@@ -189,5 +194,7 @@ for (rep_data, name, creation_date, last_push_date, commit_page_data, has_next_p
             #     last_bug_fix = dtime
             last_dtime = dtime
 
-    from_start_time = [(time-convert_datetime(creation_date)).seconds for time in dtimes[1:]]
+    from_start_time = [
+        (time-convert_datetime(creation_date)).seconds for time in dtimes[1:]
+    ]
     plot(from_start_time, np.log(commit_rate[1:]), 'x')
