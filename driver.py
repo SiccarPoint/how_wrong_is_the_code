@@ -199,9 +199,6 @@ for i in range(pages):
          has_next_page, commits) in process_aquired_data(data):
         dtimes = []
         times_bugs_fixed = []
-        time_to_bug_fix = []
-        commit_rate = []
-        bug_fix_rate = []
         last_dtime = None
         last_bug_fix = None
         authors = set()
@@ -212,10 +209,6 @@ for i in range(pages):
             # print(isbug)
             if dtime is not None:
                 dtimes.append(dtime)
-                if last_dtime is None:
-                    commit_rate.append(None)
-                else:
-                    commit_rate.append(1./timedelta_to_days(last_dtime - dtime))
                 if isbug:
                     times_bugs_fixed.append(dtime)
                 last_dtime = dtime
@@ -232,20 +225,14 @@ for i in range(pages):
             timedelta_to_days(time - first_commit_dtime)
             for time in times_bugs_fixed
         ]
-        figure(1)
-        # this is not a very helpful plot...
-        plot(from_start_time, np.log(commit_rate[1:]), 'x')
-        ylabel('log commit rate (per day)')
-        xlabel('time since repo creation (days)')
-        currlim = ylim()
-        ylim((0., currlim[1]))
 
         figure(2)
         plot(np.log(from_start_time_full), list(range(len(dtimes), 0, -1)))
         figure(3)
         plot(from_start_time_full, list(range(len(dtimes), 0, -1)))
         figure(4)
-        plot(bug_from_start_time, list(range(len(times_bugs_fixed), 0, -1)))
+        plot(bug_from_start_time + [0, ],
+             list(range(len(times_bugs_fixed), -1, -1)))
 
     if next_page:
         cursor = new_cursor
