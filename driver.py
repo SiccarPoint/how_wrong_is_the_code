@@ -2,12 +2,12 @@
 
 import requests, json, re
 import numpy as np
-from matplotlib.pyplot import plot, figure, show, xlabel, ylabel
+from matplotlib.pyplot import plot, figure, show, xlabel, ylabel, xlim, ylim
 from datetime import datetime
 from requests.auth import HTTPDigestAuth
 
-q = '''query($first: Int!, $query: String!){
-  search(first: $first, type: REPOSITORY, query: $query) {
+q = '''query($first: Int!, $query: String!, $repo_after: String){
+  search(first: $first, type: REPOSITORY, query: $query, after: $repo_after) {
     edges {
       node {
         ... on Repository {
@@ -22,6 +22,7 @@ q = '''query($first: Int!, $query: String!){
                   totalCount
                   pageInfo {
                     hasNextPage
+                    endCursor
                   }
                   edges {
                     node {
@@ -43,32 +44,54 @@ q = '''query($first: Int!, $query: String!){
         }
       }
     }
+    pageInfo {
+      hasNextPage
+      endCursor
+    }
+  }
+  rateLimit {
+    limit
+    cost
+    remaining
+    resetAt
   }
 }'''
 
-def get_data(first, query, headers):
-
+def get_data(first, query, search_page, headers):
     r = requests.post('https://api.github.com/graphql',
                       json = {"query": q,
-                              "variables": {"first": first, "query": query}},
+                              "variables": {
+                                  "first": first, "query": query,
+                                  "repo_after": None
+                              }},
                       headers=headers)
-    aquired_repos = r.json()['data']['search']['edges']
-
-    return aquired_repos
+    try:
+        print("Query cost:", r.json()['data']['rateLimit']['cost'])
+    except (TypeError, KeyError):
+        print(r.json())
+        print("You likely requested too much at once!")
+    print("Query limit remaining:", r.json()['data']['rateLimit']['remaining'])
+    print("Reset at:", r.json()['data']['rateLimit']['resetAt'])
+    try:
+        aquired_repos = r.json()['data']['search']['edges']
+    except TypeError:  # None means issue with form of return
+        print(r.json())
+    next_page = bool(r.json()['data']['search']['pageInfo']['hasNextPage'])
+    cursor = r.json()['data']['search']['pageInfo']['endCursor']
+    return aquired_repos, next_page, cursor
 
 def process_aquired_data(aquired_repos):
 
     for rep in aquired_repos:
-        rep_data = rep['node']
-        name = rep_data['nameWithOwner']
-        creation_date = rep_data['createdAt']
-        last_push_date = rep_data['pushedAt']
-        commit_page_data = rep_data['ref']['target']['history']
-        total_commits = rep_data['ref']['target']['history']['totalCount']
-        has_next_page = commit_page_data['pageInfo']['hasNextPage']
-        commits = commit_page_data['edges']  # this is the list of <=100 commits
-
-        try:
+        try:  # incomplete returns will fail with Nones in here, hence exception
+            rep_data = rep['node']
+            name = rep_data['nameWithOwner']
+            creation_date = rep_data['createdAt']
+            last_push_date = rep_data['pushedAt']
+            commit_page_data = rep_data['ref']['target']['history']
+            total_commits = rep_data['ref']['target']['history']['totalCount']
+            has_next_page = commit_page_data['pageInfo']['hasNextPage']
+            commits = commit_page_data['edges']  # this is the list of <=100 commits
             dt_start = convert_datetime(creation_date)
             dt_last_push = convert_datetime(last_push_date)
         except TypeError:
@@ -167,7 +190,7 @@ def is_commit_bug(message_headline, message):
 
 # headers = {'Authorization': "Bearer TOKEN_HERE"}
 
-data = get_data(10, "physics", headers)
+data, next_page, cursor = get_data(30, "physics", None, headers)
 
 for (rep_data, name, creation_date, last_push_date, commit_page_data,
      has_next_page, commits) in process_aquired_data(data):
@@ -212,8 +235,14 @@ for (rep_data, name, creation_date, last_push_date, commit_page_data,
         timedelta_to_days(time - first_commit_dtime) for time in dtimes
     ]
     figure(1)
-    plot(from_start_time, np.log(commit_rate[1:]), 'x')
-    xlabel('commit rate (per day)')
-    ylabel('log(time since repo creation (days))')
+    # this is not a very helpful plot...
+    plot(from_start_time, commit_rate[1:], 'x')
+    ylabel('commit rate (per day)')
+    xlabel('time since repo creation (days)')
+    currlim = ylim()
+    ylim((0., currlim[1]))
+
     figure(2)
     plot(np.log(from_start_time_full), list(range(len(dtimes), 0, -1)))
+    figure(3)
+    plot(from_start_time_full, list(range(len(dtimes), 0, -1)))
