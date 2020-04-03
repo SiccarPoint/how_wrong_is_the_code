@@ -68,8 +68,11 @@ def process_aquired_data(aquired_repos):
         has_next_page = commit_page_data['pageInfo']['hasNextPage']
         commits = commit_page_data['edges']  # this is the list of <=100 commits
 
-        dt_start = convert_datetime(creation_date)
-        dt_last_push = convert_datetime(last_push_date)
+        try:
+            dt_start = convert_datetime(creation_date)
+            dt_last_push = convert_datetime(last_push_date)
+        except TypeError:
+            continue
         dt_delta = dt_last_push-dt_start
 
         print(name + ":\t" +str(dt_delta) + "\t" +str(total_commits))
@@ -79,17 +82,19 @@ def process_aquired_data(aquired_repos):
                has_next_page, commits)
 
 def convert_datetime(datetime_str):
-    try:
-        yr = int(datetime_str[:4])
-        mo = int(datetime_str[5:7])
-        da = int(datetime_str[8:10])
-        hr = int(datetime_str[11:13])
-        mi = int(datetime_str[14:16])
-        se = int(datetime_str[17:19])
-        dt = datetime(yr, mo, da, hr, mi, se)
-        return dt
-    except TypeError:
-        return None
+    yr = int(datetime_str[:4])
+    mo = int(datetime_str[5:7])
+    da = int(datetime_str[8:10])
+    hr = int(datetime_str[11:13])
+    mi = int(datetime_str[14:16])
+    se = int(datetime_str[17:19])
+    dt = datetime(yr, mo, da, hr, mi, se)
+    return dt
+
+
+def timedelta_to_days(timedelta):
+    t = timedelta.days + timedelta.seconds / 86400.
+    return t
 
 
 def first_commit_dtime(commits, is_next_page, override_next_page=False):
@@ -113,7 +118,10 @@ def yield_commits_data(commits):
     for c in commits:
         data = c['node']
         author_name = data['author']['name']
-        pushed_datetime = convert_datetime(data['pushedDate'])
+        try:
+            pushed_datetime = convert_datetime(data['pushedDate'])
+        except TypeError:
+            continue
         message_headline = data['messageHeadline']
         message = data['message']
         yield author_name, pushed_datetime, message_headline, message
@@ -157,9 +165,10 @@ def is_commit_bug(message_headline, message):
     return found
 
 
-headers = {'Authorization': "Bearer TOKEN_HERE"}
+# headers = {'Authorization': "Bearer TOKEN_HERE"}
 
 data = get_data(10, "physics", headers)
+
 for (rep_data, name, creation_date, last_push_date, commit_page_data,
      has_next_page, commits) in process_aquired_data(data):
     dtimes = []
@@ -180,7 +189,7 @@ for (rep_data, name, creation_date, last_push_date, commit_page_data,
             if last_dtime is None:
                 commit_rate.append(None)
             else:
-                commit_rate.append(1./(dtime - last_dtime).seconds)
+                commit_rate.append(1./timedelta_to_days(last_dtime - dtime))
             # if isbug:
             #     try:
             #         bug_fix_rate.append(1./(dtime - last_bug_fix).seconds)
@@ -194,9 +203,17 @@ for (rep_data, name, creation_date, last_push_date, commit_page_data,
             #     last_bug_fix = dtime
             last_dtime = dtime
 
+    # creation_dtime = convert_datetime(creation_date)
+    first_commit_dtime = dtimes[-1]
     from_start_time = [
-        (time-convert_datetime(creation_date)).seconds for time in dtimes[1:]
+        timedelta_to_days(time - first_commit_dtime) for time in dtimes[1:]
     ]
+    from_start_time_full = [
+        timedelta_to_days(time - first_commit_dtime) for time in dtimes
+    ]
+    figure(1)
     plot(from_start_time, np.log(commit_rate[1:]), 'x')
-    xlabel('commit rate (per s)')
-    ylabel('log(time since repo creation (s))')
+    xlabel('commit rate (per day)')
+    ylabel('log(time since repo creation (days))')
+    figure(2)
+    plot(np.log(from_start_time_full), list(range(len(dtimes), 0, -1)))
