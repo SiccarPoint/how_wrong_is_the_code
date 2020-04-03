@@ -22,7 +22,7 @@ q = '''query($first: Int!, $query: String!, $repo_after: String){
                   totalCount
                   pageInfo {
                     hasNextPage
-                    endCursor
+#                    endCursor
                   }
                   edges {
                     node {
@@ -57,12 +57,12 @@ q = '''query($first: Int!, $query: String!, $repo_after: String){
   }
 }'''
 
-def get_data(first, query, search_page, headers):
+def get_data(first, query, cursor, headers):
     r = requests.post('https://api.github.com/graphql',
                       json = {"query": q,
                               "variables": {
                                   "first": first, "query": query,
-                                  "repo_after": None
+                                  "repo_after": cursor
                               }},
                       headers=headers)
     try:
@@ -190,59 +190,67 @@ def is_commit_bug(message_headline, message):
 
 # headers = {'Authorization': "Bearer TOKEN_HERE"}
 
-data, next_page, cursor = get_data(30, "physics", None, headers)
+cursor = None
+pages = 5
+for i in range(pages):
+    data, next_page, new_cursor = get_data(20, "physics", cursor, headers)
 
-for (rep_data, name, creation_date, last_push_date, commit_page_data,
-     has_next_page, commits) in process_aquired_data(data):
-    dtimes = []
-    times_bugs_fixed = []
-    time_to_bug_fix = []
-    commit_rate = []
-    bug_fix_rate = []
-    last_dtime = None
-    last_bug_fix = None
-    authors = set()
-    # firsttime = first_commit_dtime(commits, False, override_next_page=True)
-    for auth, dtime, head, mess in yield_commits_data(commits):
-        authors.add(auth)
-        isbug = is_commit_bug(head, mess)
-        # print(isbug)
-        if dtime is not None:
-            dtimes.append(dtime)
-            if last_dtime is None:
-                commit_rate.append(None)
-            else:
-                commit_rate.append(1./timedelta_to_days(last_dtime - dtime))
-            # if isbug:
-            #     try:
-            #         bug_fix_rate.append(1./(dtime - last_bug_fix).seconds)
-            #     except TypeError:  # None
-            #         bug_fix_rate.append(None)
-            #     times_bugs_fixed.append(dtime)
-            #     try:
-            #         time_to_bug_fix.append((dtime - firsttime).seconds)
-            #     except TypeError:
-            #         time_to_bug_fix.append(None)
-            #     last_bug_fix = dtime
-            last_dtime = dtime
+    for (rep_data, name, creation_date, last_push_date, commit_page_data,
+         has_next_page, commits) in process_aquired_data(data):
+        dtimes = []
+        times_bugs_fixed = []
+        time_to_bug_fix = []
+        commit_rate = []
+        bug_fix_rate = []
+        last_dtime = None
+        last_bug_fix = None
+        authors = set()
+        # firsttime = first_commit_dtime(commits, False, override_next_page=True)
+        for auth, dtime, head, mess in yield_commits_data(commits):
+            authors.add(auth)
+            isbug = is_commit_bug(head, mess)
+            # print(isbug)
+            if dtime is not None:
+                dtimes.append(dtime)
+                if last_dtime is None:
+                    commit_rate.append(None)
+                else:
+                    commit_rate.append(1./timedelta_to_days(last_dtime - dtime))
+                # if isbug:
+                #     try:
+                #         bug_fix_rate.append(1./(dtime - last_bug_fix).seconds)
+                #     except TypeError:  # None
+                #         bug_fix_rate.append(None)
+                #     times_bugs_fixed.append(dtime)
+                #     try:
+                #         time_to_bug_fix.append((dtime - firsttime).seconds)
+                #     except TypeError:
+                #         time_to_bug_fix.append(None)
+                #     last_bug_fix = dtime
+                last_dtime = dtime
 
-    # creation_dtime = convert_datetime(creation_date)
-    first_commit_dtime = dtimes[-1]
-    from_start_time = [
-        timedelta_to_days(time - first_commit_dtime) for time in dtimes[1:]
-    ]
-    from_start_time_full = [
-        timedelta_to_days(time - first_commit_dtime) for time in dtimes
-    ]
-    figure(1)
-    # this is not a very helpful plot...
-    plot(from_start_time, commit_rate[1:], 'x')
-    ylabel('commit rate (per day)')
-    xlabel('time since repo creation (days)')
-    currlim = ylim()
-    ylim((0., currlim[1]))
+        # creation_dtime = convert_datetime(creation_date)
+        first_commit_dtime = dtimes[-1]
+        from_start_time = [
+            timedelta_to_days(time - first_commit_dtime) for time in dtimes[1:]
+        ]
+        from_start_time_full = [
+            timedelta_to_days(time - first_commit_dtime) for time in dtimes
+        ]
+        figure(1)
+        # this is not a very helpful plot...
+        plot(from_start_time, np.log(commit_rate[1:]), 'x')
+        ylabel('log commit rate (per day)')
+        xlabel('time since repo creation (days)')
+        currlim = ylim()
+        ylim((0., currlim[1]))
 
-    figure(2)
-    plot(np.log(from_start_time_full), list(range(len(dtimes), 0, -1)))
-    figure(3)
-    plot(from_start_time_full, list(range(len(dtimes), 0, -1)))
+        figure(2)
+        plot(np.log(from_start_time_full), list(range(len(dtimes), 0, -1)))
+        figure(3)
+        plot(from_start_time_full, list(range(len(dtimes), 0, -1)))
+
+    if next_page:
+        cursor = new_cursor
+    else:
+        break
