@@ -216,7 +216,10 @@ for i in range(pages):
                 last_dtime = dtime
 
         total_authors.append(len(authors))
-        bug_find_rate.append(len(times_bugs_fixed) / len(dtimes))
+        try:
+            bug_find_rate.append(len(times_bugs_fixed) / len(dtimes))
+        except ZeroDivisionError:
+            bug_find_rate.append(0.)
 
         # creation_dtime = convert_datetime(creation_date)
         first_commit_dtime = dtimes[-1]
@@ -245,4 +248,4 @@ for i in range(pages):
         break
 
 figure(5)
-bar(sorted(bug_find_rate))
+plot(sorted(bug_find_rate))
