@@ -190,8 +190,8 @@ def is_commit_bug(message_headline, message):
 
 # headers = {'Authorization': "Bearer TOKEN_HERE"}
 
-cursor = None
-pages = 5
+cursor = None  # leave this alone
+pages = 2
 for i in range(pages):
     data, next_page, new_cursor = get_data(20, "physics", cursor, headers)
 
@@ -216,17 +216,8 @@ for i in range(pages):
                     commit_rate.append(None)
                 else:
                     commit_rate.append(1./timedelta_to_days(last_dtime - dtime))
-                # if isbug:
-                #     try:
-                #         bug_fix_rate.append(1./(dtime - last_bug_fix).seconds)
-                #     except TypeError:  # None
-                #         bug_fix_rate.append(None)
-                #     times_bugs_fixed.append(dtime)
-                #     try:
-                #         time_to_bug_fix.append((dtime - firsttime).seconds)
-                #     except TypeError:
-                #         time_to_bug_fix.append(None)
-                #     last_bug_fix = dtime
+                if isbug:
+                    times_bugs_fixed.append(dtime)
                 last_dtime = dtime
 
         # creation_dtime = convert_datetime(creation_date)
@@ -236,6 +227,10 @@ for i in range(pages):
         ]
         from_start_time_full = [
             timedelta_to_days(time - first_commit_dtime) for time in dtimes
+        ]
+        bug_from_start_time = [
+            timedelta_to_days(time - first_commit_dtime)
+            for time in times_bugs_fixed
         ]
         figure(1)
         # this is not a very helpful plot...
@@ -249,6 +244,8 @@ for i in range(pages):
         plot(np.log(from_start_time_full), list(range(len(dtimes), 0, -1)))
         figure(3)
         plot(from_start_time_full, list(range(len(dtimes), 0, -1)))
+        figure(4)
+        plot(bug_from_start_time, list(range(len(times_bugs_fixed), 0, -1)))
 
     if next_page:
         cursor = new_cursor
