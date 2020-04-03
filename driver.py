@@ -2,7 +2,7 @@
 
 import requests, json, re
 import numpy as np
-from matplotlib.pyplot import plot, figure, show, xlabel, ylabel, xlim, ylim
+from matplotlib.pyplot import plot, figure, show, xlabel, ylabel, xlim, ylim, bar
 from datetime import datetime
 from requests.auth import HTTPDigestAuth
 
@@ -192,6 +192,8 @@ def is_commit_bug(message_headline, message):
 
 cursor = None  # leave this alone
 pages = 2
+bug_find_rate = []  # i.e., per bugs per commit
+total_authors = []
 for i in range(pages):
     data, next_page, new_cursor = get_data(20, "physics", cursor, headers)
 
@@ -212,6 +214,9 @@ for i in range(pages):
                 if isbug:
                     times_bugs_fixed.append(dtime)
                 last_dtime = dtime
+
+        total_authors.append(len(authors))
+        bug_find_rate.append(len(times_bugs_fixed) / len(dtimes))
 
         # creation_dtime = convert_datetime(creation_date)
         first_commit_dtime = dtimes[-1]
@@ -238,3 +243,6 @@ for i in range(pages):
         cursor = new_cursor
     else:
         break
+
+figure(5)
+bar(sorted(bug_find_rate))
