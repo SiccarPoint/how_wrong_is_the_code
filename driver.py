@@ -309,64 +309,74 @@ def plot_commit_and_bug_rates(from_start_time, bug_from_start_time):
     #log - 1 fits would work here if needed
 
 
-cursor = None  # leave this alone
-pages = 10
-bug_find_rate = []  # i.e., per bugs per commit
-total_authors = []
-long_repos = []  # will store [num_commits, name, owner]
-for i in range(pages):
-    data, next_page, new_cursor = get_data(20, "landlab", cursor, HEADER)
+if __name__ == "__main__":
+    pages = 10
+    topic = 'physics'
+    bug_find_rate = []  # i.e., per bugs per commit
+    total_authors = []
+    long_repos = []  # will store [num_commits, name, owner]
+    cursor = None  # leave this alone
+    for i in range(pages):
+        data, next_page, new_cursor = get_data(20, topic, cursor, HEADER)
 
-    for (rep_data, nameowner, name, owner, creation_date,
-         last_push_date, commit_page_data, has_next_page,
-         commits, total_commits) in process_aquired_data(data):
-        if total_commits > 100:
-            long_repos.append([total_commits, name, owner])
-            continue
+        for (rep_data, nameowner, name, owner, creation_date,
+             last_push_date, commit_page_data, has_next_page,
+             commits, total_commits) in process_aquired_data(data):
+            if total_commits > 100:
+                long_repos.append([total_commits, name, owner])
+                continue
 
+            times_bugs_fixed, dtimes, authors = build_commit_and_bug_timelines(
+                commits)
+
+            total_authors.append(len(authors))
+            try:
+                bug_find_rate.append(len(times_bugs_fixed) / len(dtimes))
+            except ZeroDivisionError:
+                bug_find_rate.append(0.)
+
+            try:
+                bug_from_start_time, from_start_time = \
+                    build_times_from_first_commit(times_bugs_fixed, dtimes)
+            except TypeError:  # no commits present
+                continue
+
+            plot_commit_and_bug_rates(from_start_time, bug_from_start_time)
+        if next_page:
+            cursor = new_cursor
+        else:
+            break
+
+    print('***')
+    for repo in sorted(long_repos)[::-1]:
+        print(repo)
+    print('***')
+    input('Found ' + str(len(long_repos)) + ' long repos. Proceed? [Enter]')
+
+    for count, name, owner in sorted(long_repos)[::-1]:
+        print('Reading more commits for ' + owner + '/' + name
+              + ', total commits: ' + str(count))
+        commits = get_commits_single_repo(name, owner, HEADER, max_iters=10)
+        print('Successfully loaded ' + str(len(commits)) + ' commits')
         times_bugs_fixed, dtimes, authors = build_commit_and_bug_timelines(
-            commits)
-
+            commits
+        )
         total_authors.append(len(authors))
         try:
             bug_find_rate.append(len(times_bugs_fixed) / len(dtimes))
         except ZeroDivisionError:
             bug_find_rate.append(0.)
-
         try:
             bug_from_start_time, from_start_time = \
                 build_times_from_first_commit(times_bugs_fixed, dtimes)
         except TypeError:  # no commits present
             continue
-
         plot_commit_and_bug_rates(from_start_time, bug_from_start_time)
-    if next_page:
-        cursor = new_cursor
-    else:
-        break
 
-for count, name, owner in sorted(long_repos)[::-1]:
-    print('Reading more commits for ' + owner + '/' + name
-          + ', total commits: ' + str(count))
-    commits = get_commits_single_repo(name, owner, HEADER, max_iters=10)
-    print('Successfully loaded ' + str(len(commits)) + ' commits')
-    times_bugs_fixed, dtimes, authors = build_commit_and_bug_timelines(commits)
-    total_authors.append(len(authors))
-    try:
-        bug_find_rate.append(len(times_bugs_fixed) / len(dtimes))
-    except ZeroDivisionError:
-        bug_find_rate.append(0.)
-    try:
-        bug_from_start_time, from_start_time = \
-            build_times_from_first_commit(times_bugs_fixed, dtimes)
-    except TypeError:  # no commits present
-        continue
-    plot_commit_and_bug_rates(from_start_time, bug_from_start_time)
-
-figure(1)
-plot(sorted(bug_find_rate))
-ylabel('Fraction of all commits finding bugs')
-figure('Total committers vs bug find rate')
-plot(total_authors, bug_find_rate, 'x')
-xlabel('Number of authors committing to code')
-ylabel('Fraction of all commits finding bugs')
+    figure('Bug find rate, by project, ascending order')
+    plot(sorted(bug_find_rate))
+    ylabel('Fraction of all commits finding bugs')
+    figure('Total committers vs bug find rate')
+    plot(total_authors, bug_find_rate, 'x')
+    xlabel('Number of authors committing to code')
+    ylabel('Fraction of all commits finding bugs')
