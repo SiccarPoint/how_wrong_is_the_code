@@ -15,7 +15,7 @@ q = '''query($first: Int!, $query: String!, $repo_after: String, $commits_after:
           nameWithOwner
           name
           owner {
-            id
+            login
           }
           createdAt
           pushedAt
@@ -134,7 +134,10 @@ def get_commits_single_repo(name, owner, headers, max_iters=10):
                                       "commits_after": commits_after
                                   }},
                           headers=headers)
-        commit_info = r.json()['data']['repository']['object']['history']
+        try:
+            commit_info = r.json()['data']['repository']['object']['history']
+        except TypeError:
+            print(r.json())
         next_page = bool(
             commit_info['pageInfo']['hasNextPage']
         )
@@ -145,13 +148,12 @@ def get_commits_single_repo(name, owner, headers, max_iters=10):
 
 
 def process_aquired_data(aquired_repos):
-
     for rep in aquired_repos:
         try:  # incomplete returns will fail with Nones in here, hence exception
             rep_data = rep['node']
             nameowner = rep_data['nameWithOwner']
             name = rep_data['name']
-            owner = rep_data['owner']['id']
+            owner = rep_data['owner']['login']
             creation_date = rep_data['createdAt']
             last_push_date = rep_data['pushedAt']
             commit_page_data = rep_data['ref']['target']['history']
@@ -256,7 +258,56 @@ def is_commit_bug(message_headline, message):
     return found
 
 
-# headers = {'Authorization': "Bearer TOKEN_HERE"}
+def build_commit_and_bug_timelines(commits):
+    dtimes = []
+    times_bugs_fixed = []
+    last_dtime = None
+    last_bug_fix = None
+    authors = set()
+    # firsttime = first_commit_dtime(commits, False, override_next_page=True)
+    for auth, dtime, head, mess in yield_commits_data(commits):
+        authors.add(auth)
+        isbug = is_commit_bug(head, mess)
+        # print(isbug)
+        if dtime is not None:
+            dtimes.append(dtime)
+            if isbug:
+                times_bugs_fixed.append(dtime)
+            last_dtime = dtime
+    return times_bugs_fixed, dtimes, authors
+
+
+def build_times_from_first_commit(times_bugs_fixed, dtimes):
+    try:
+        first_commit_dtime = dtimes[-1]
+    except IndexError:  # no commits present
+        return None # will trigger TypeError during allocation outside fn
+    from_start_time = [
+        timedelta_to_days(time - first_commit_dtime) for time in dtimes
+    ]
+    bug_from_start_time = [
+        timedelta_to_days(time - first_commit_dtime)
+        for time in times_bugs_fixed
+    ]
+    return bug_from_start_time, from_start_time
+
+
+def plot_commit_and_bug_rates(from_start_time, bug_from_start_time):
+    figure('cumulative commits, time logged')
+    plot(np.log(from_start_time), list(range(len(from_start_time), 0, -1)))
+    xlabel('Time (logged days)')
+    ylabel('Total commits')
+    figure('cumulative commits')
+    plot(from_start_time, list(range(len(from_start_time), 0, -1)))
+    xlabel('Time (days)')
+    ylabel('Total commits')
+    figure('cumulative bugs')
+    plot(bug_from_start_time + [0, ],
+         list(range(len(bug_from_start_time), -1, -1)))
+    xlabel('Time (days)')
+    ylabel('Total bugs')
+    #log - 1 fits would work here if needed
+
 
 cursor = None  # leave this alone
 pages = 10
@@ -271,21 +322,10 @@ for i in range(pages):
          commits, total_commits) in process_aquired_data(data):
         if total_commits > 100:
             long_repos.append([total_commits, name, owner])
-        dtimes = []
-        times_bugs_fixed = []
-        last_dtime = None
-        last_bug_fix = None
-        authors = set()
-        # firsttime = first_commit_dtime(commits, False, override_next_page=True)
-        for auth, dtime, head, mess in yield_commits_data(commits):
-            authors.add(auth)
-            isbug = is_commit_bug(head, mess)
-            # print(isbug)
-            if dtime is not None:
-                dtimes.append(dtime)
-                if isbug:
-                    times_bugs_fixed.append(dtime)
-                last_dtime = dtime
+            continue
+
+        times_bugs_fixed, dtimes, authors = build_commit_and_bug_timelines(
+            commits)
 
         total_authors.append(len(authors))
         try:
@@ -293,35 +333,39 @@ for i in range(pages):
         except ZeroDivisionError:
             bug_find_rate.append(0.)
 
-        # creation_dtime = convert_datetime(creation_date)
         try:
-            first_commit_dtime = dtimes[-1]
-        except IndexError:  # no commits present
+            bug_from_start_time, from_start_time = \
+        except TypeError:  # no commits present
             continue
-        from_start_time = [
-            timedelta_to_days(time - first_commit_dtime) for time in dtimes[1:]
-        ]
-        from_start_time_full = [
-            timedelta_to_days(time - first_commit_dtime) for time in dtimes
-        ]
-        bug_from_start_time = [
-            timedelta_to_days(time - first_commit_dtime)
-            for time in times_bugs_fixed
-        ]
 
-        figure(2)
-        plot(np.log(from_start_time_full), list(range(len(dtimes), 0, -1)))
-        figure(3)
-        plot(from_start_time_full, list(range(len(dtimes), 0, -1)))
-        figure(4)
-        plot(bug_from_start_time + [0, ],
-             list(range(len(times_bugs_fixed), -1, -1)))
-        #log - 1 fits would work here if needed
-
+        plot_commit_and_bug_rates(from_start_time, bug_from_start_time)
     if next_page:
         cursor = new_cursor
     else:
         break
 
-figure(5)
+for count, name, owner in sorted(long_repos)[::-1]:
+    print('Reading more commits for ' + owner + '/' + name
+          + ', total commits: ' + str(count))
+    commits = get_commits_single_repo(name, owner, HEADER, max_iters=10)
+    print('Successfully loaded ' + str(len(commits)) + ' commits')
+    times_bugs_fixed, dtimes, authors = build_commit_and_bug_timelines(commits)
+    total_authors.append(len(authors))
+    try:
+        bug_find_rate.append(len(times_bugs_fixed) / len(dtimes))
+    except ZeroDivisionError:
+        bug_find_rate.append(0.)
+    try:
+        bug_from_start_time, from_start_time = \
+            build_times_from_first_commit(times_bugs_fixed, dtimes)
+    except TypeError:  # no commits present
+        continue
+    plot_commit_and_bug_rates(from_start_time, bug_from_start_time)
+
+figure(1)
 plot(sorted(bug_find_rate))
+ylabel('Fraction of all commits finding bugs')
+figure('Total committers vs bug find rate')
+plot(total_authors, bug_find_rate, 'x')
+xlabel('Number of authors committing to code')
+ylabel('Fraction of all commits finding bugs')
