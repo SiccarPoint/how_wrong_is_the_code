@@ -192,7 +192,7 @@ def is_commit_bug(message_headline, message):
 # headers = {'Authorization': "Bearer TOKEN_HERE"}
 
 cursor = None  # leave this alone
-pages = 2
+pages = 10
 bug_find_rate = []  # i.e., per bugs per commit
 total_authors = []
 for i in range(pages):
@@ -223,7 +223,10 @@ for i in range(pages):
             bug_find_rate.append(0.)
 
         # creation_dtime = convert_datetime(creation_date)
-        first_commit_dtime = dtimes[-1]
+        try:
+            first_commit_dtime = dtimes[-1]
+        except IndexError:  # no commits present
+            continue
         from_start_time = [
             timedelta_to_days(time - first_commit_dtime) for time in dtimes[1:]
         ]
@@ -242,6 +245,7 @@ for i in range(pages):
         figure(4)
         plot(bug_from_start_time + [0, ],
              list(range(len(times_bugs_fixed), -1, -1)))
+        #log - 1 fits would work here if needed
 
     if next_page:
         cursor = new_cursor
