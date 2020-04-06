@@ -335,6 +335,7 @@ for i in range(pages):
 
         try:
             bug_from_start_time, from_start_time = \
+                build_times_from_first_commit(times_bugs_fixed, dtimes)
         except TypeError:  # no commits present
             continue
 
