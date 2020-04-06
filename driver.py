@@ -13,6 +13,10 @@ q = '''query($first: Int!, $query: String!, $repo_after: String, $commits_after:
       node {
         ... on Repository {
           nameWithOwner
+          name
+          owner {
+            id
+          }
           createdAt
           pushedAt
           ref(qualifiedName: "master") {
@@ -59,6 +63,38 @@ q = '''query($first: Int!, $query: String!, $repo_after: String, $commits_after:
 }
 '''
 
+q_single_repo = '''
+query ($name: String!, $owner: String!, $commits_after: String) {
+  repository(name: $name, owner: $owner) {
+    object(expression: "master") {
+      ...on Commit {
+        history(first: 100, after: $commits_after) {
+          totalCount
+          pageInfo {
+            hasNextPage
+            commitsEndCursor: endCursor
+          }
+          edges {
+            node {
+              author {
+                name
+                email
+                date
+              }
+              pushedDate
+              messageHeadline
+              oid
+              message
+            }
+          }
+        }
+      }
+    }
+  }
+}
+'''
+
+
 def get_data(first, query, cursor, headers):
     r = requests.post('https://api.github.com/graphql',
                       json = {"query": q,
@@ -82,12 +118,40 @@ def get_data(first, query, cursor, headers):
     cursor = r.json()['data']['search']['pageInfo']['reposEndCursor']
     return aquired_repos, next_page, cursor
 
+
+def get_commits_single_repo(name, owner, headers, max_iters=10):
+    """Return list of all commits for a single identified repo.
+    """
+    commits_after = None
+    next_page = True
+    itercount = 0
+    all_commits = []
+    while next_page and itercount < max_iters:
+        r = requests.post('https://api.github.com/graphql',
+                          json = {"query": q_single_repo,
+                                  "variables": {
+                                      "name": name, "owner": owner,
+                                      "commits_after": commits_after
+                                  }},
+                          headers=headers)
+        commit_info = r.json()['data']['repository']['object']['history']
+        next_page = bool(
+            commit_info['pageInfo']['hasNextPage']
+        )
+        commits_after = commit_info['pageInfo']['commitsEndCursor']
+        all_commits += commit_info['edges']
+        itercount += 1
+    return all_commits
+
+
 def process_aquired_data(aquired_repos):
 
     for rep in aquired_repos:
         try:  # incomplete returns will fail with Nones in here, hence exception
             rep_data = rep['node']
-            name = rep_data['nameWithOwner']
+            nameowner = rep_data['nameWithOwner']
+            name = rep_data['name']
+            owner = rep_data['owner']['id']
             creation_date = rep_data['createdAt']
             last_push_date = rep_data['pushedAt']
             commit_page_data = rep_data['ref']['target']['history']
@@ -103,8 +167,9 @@ def process_aquired_data(aquired_repos):
         print(name + ":\t" +str(dt_delta) + "\t" +str(total_commits))
 
 
-        yield (rep_data, name, creation_date, last_push_date, commit_page_data,
-               has_next_page, commits)
+        yield (rep_data, nameowner, name, owner, creation_date, last_push_date,
+               commit_page_data, has_next_page, commits, total_commits)
+
 
 def convert_datetime(datetime_str):
     yr = int(datetime_str[:4])
@@ -134,6 +199,7 @@ def first_commit_dtime(commits, is_next_page, override_next_page=False):
                 return firsttime
             else:
                 lastpt -= 1
+
 
 def yield_commits_data(commits):
     """
@@ -196,11 +262,15 @@ cursor = None  # leave this alone
 pages = 10
 bug_find_rate = []  # i.e., per bugs per commit
 total_authors = []
+long_repos = []  # will store [num_commits, name, owner]
 for i in range(pages):
     data, next_page, new_cursor = get_data(20, "landlab", cursor, HEADER)
 
-    for (rep_data, name, creation_date, last_push_date, commit_page_data,
-         has_next_page, commits) in process_aquired_data(data):
+    for (rep_data, nameowner, name, owner, creation_date,
+         last_push_date, commit_page_data, has_next_page,
+         commits, total_commits) in process_aquired_data(data):
+        if total_commits > 100:
+            long_repos.append([total_commits, name, owner])
         dtimes = []
         times_bugs_fixed = []
         last_dtime = None
