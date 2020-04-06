@@ -306,7 +306,8 @@ def plot_commit_and_bug_rates(from_start_time, bug_from_start_time):
          list(range(len(bug_from_start_time), -1, -1)))
     xlabel('Time (days)')
     ylabel('Total bugs')
-    #log - 1 fits would work here if needed
+    # log - 1 fits would work here if needed
+    # form of 1 - exp(kx) may be preferred, as a decay process
 
 
 if __name__ == "__main__":
