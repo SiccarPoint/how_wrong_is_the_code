@@ -7,7 +7,7 @@ from datetime import datetime
 from header.header import HEADER
 from requests.auth import HTTPDigestAuth
 
-q = '''query($first: Int!, $query: String!, $repo_after: String){
+q = '''query($first: Int!, $query: String!, $repo_after: String, $commits_after: String){
   search(first: $first, type: REPOSITORY, query: $query, after: $repo_after) {
     edges {
       node {
@@ -19,11 +19,11 @@ q = '''query($first: Int!, $query: String!, $repo_after: String){
             target {
               ... on Commit {
  #               id
-                history(first: 100) {
+                history(first: 100, after: $commits_after) {
                   totalCount
                   pageInfo {
                     hasNextPage
-#                    endCursor
+                    commitsEndCursor: endCursor
                   }
                   edges {
                     node {
@@ -47,7 +47,7 @@ q = '''query($first: Int!, $query: String!, $repo_after: String){
     }
     pageInfo {
       hasNextPage
-      endCursor
+      reposEndCursor: endCursor
     }
   }
   rateLimit {
@@ -56,7 +56,8 @@ q = '''query($first: Int!, $query: String!, $repo_after: String){
     remaining
     resetAt
   }
-}'''
+}
+'''
 
 def get_data(first, query, cursor, headers):
     r = requests.post('https://api.github.com/graphql',
@@ -78,7 +79,7 @@ def get_data(first, query, cursor, headers):
     except TypeError:  # None means issue with form of return
         print(r.json())
     next_page = bool(r.json()['data']['search']['pageInfo']['hasNextPage'])
-    cursor = r.json()['data']['search']['pageInfo']['endCursor']
+    cursor = r.json()['data']['search']['pageInfo']['reposEndCursor']
     return aquired_repos, next_page, cursor
 
 def process_aquired_data(aquired_repos):
@@ -196,7 +197,7 @@ pages = 10
 bug_find_rate = []  # i.e., per bugs per commit
 total_authors = []
 for i in range(pages):
-    data, next_page, new_cursor = get_data(20, "physics", cursor, HEADER)
+    data, next_page, new_cursor = get_data(20, "landlab", cursor, HEADER)
 
     for (rep_data, name, creation_date, last_push_date, commit_page_data,
          has_next_page, commits) in process_aquired_data(data):
