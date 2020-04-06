@@ -4,6 +4,7 @@ import requests, json, re
 import numpy as np
 from matplotlib.pyplot import plot, figure, show, xlabel, ylabel, xlim, ylim, bar
 from datetime import datetime
+from header.header import HEADER
 from requests.auth import HTTPDigestAuth
 
 q = '''query($first: Int!, $query: String!, $repo_after: String){
@@ -195,7 +196,7 @@ pages = 2
 bug_find_rate = []  # i.e., per bugs per commit
 total_authors = []
 for i in range(pages):
-    data, next_page, new_cursor = get_data(20, "physics", cursor, headers)
+    data, next_page, new_cursor = get_data(20, "physics", cursor, HEADER)
 
     for (rep_data, name, creation_date, last_push_date, commit_page_data,
          has_next_page, commits) in process_aquired_data(data):
