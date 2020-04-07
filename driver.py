@@ -292,6 +292,21 @@ def build_times_from_first_commit(times_bugs_fixed, dtimes):
     return bug_from_start_time, from_start_time
 
 
+def calc_event_rate(times_of_events):
+    try:
+        if not np.isclose(times_of_events[-1], 0.):
+            events = np.zeros(len(times_of_events) + 1)
+            events[1:] = times_of_events[::-1]
+        else:
+            events = np.zeros(len(times_of_events))
+            events[:] = times_of_events[::-1]
+    except IndexError:  # times_of_events is empty
+        return np.array([]), 0., 0.
+    diffs = np.diff(events)
+    rates = 1. / diffs
+    return rates, np.median(rates), np.mean(rates)
+
+
 def plot_commit_and_bug_rates(from_start_time, bug_from_start_time,
                               number_of_authors):
     figure('cumulative commits, time logged')
@@ -314,7 +329,18 @@ def plot_commit_and_bug_rates(from_start_time, bug_from_start_time,
     xlabel('Time (days)')
     ylabel('Total commits per author')
     # log - 1 fits would work here if needed
-    # form of 1 - exp(kx) may be preferred, as a decay process
+    # form of 1 - exp(kx) may be preferred, as a decay process
+    figure('commit rate')
+    commit_rates, commit_rate_median, commit_rate_mean = calc_event_rate(
+        from_start_time
+    )
+    plot(sorted(commit_rates), '-')
+    figure('bug rate')
+    bug_rates, bug_rate_median, bug_rate_mean = calc_event_rate(
+        bug_from_start_time
+    )
+    plot(sorted(bug_rates), '-')
+    return commit_rate_median, commit_rate_mean, bug_rate_median, bug_rate_mean
 
 
 if __name__ == "__main__":
@@ -323,6 +349,10 @@ if __name__ == "__main__":
     bug_find_rate = []  # i.e., per bugs per commit
     total_authors = []
     total_commits_per_repo = []
+    commit_rate_median_per_repo = []
+    commit_rate_mean_per_repo = []
+    bug_rate_median_per_repo = []
+    bug_rate_mean_per_repo = []
     long_repos = []  # will store [num_commits, name, owner]
     cursor = None  # leave this alone
     for i in range(pages):
@@ -351,8 +381,14 @@ if __name__ == "__main__":
             except TypeError:  # no commits present
                 continue
 
-            plot_commit_and_bug_rates(from_start_time, bug_from_start_time,
-                                      len(authors))
+            (commit_rate_median, commit_rate_mean,
+             bug_rate_median, bug_rate_mean) = plot_commit_and_bug_rates(
+                from_start_time, bug_from_start_time, len(authors)
+            )
+            commit_rate_median_per_repo.append(commit_rate_median)
+            commit_rate_mean_per_repo.append(commit_rate_mean)
+            bug_rate_median_per_repo.append(bug_rate_median)
+            bug_rate_mean_per_repo.append(bug_rate_mean)
         if next_page:
             cursor = new_cursor
         else:
@@ -383,8 +419,13 @@ if __name__ == "__main__":
                 build_times_from_first_commit(times_bugs_fixed, dtimes)
         except TypeError:  # no commits present
             continue
-        plot_commit_and_bug_rates(from_start_time, bug_from_start_time,
-                                  len(authors))
+        commit_rate_median, commit_rate_mean, bug_rate_median, bug_rate_mean = \
+            plot_commit_and_bug_rates(from_start_time, bug_from_start_time,
+                                      len(authors))
+        commit_rate_median_per_repo.append(commit_rate_median)
+        commit_rate_mean_per_repo.append(commit_rate_mean)
+        bug_rate_median_per_repo.append(bug_rate_median)
+        bug_rate_mean_per_repo.append(bug_rate_mean)
 
     figure('Bug find rate, by project, ascending order')
     plot(sorted(bug_find_rate))
