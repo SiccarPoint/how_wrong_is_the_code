@@ -292,7 +292,8 @@ def build_times_from_first_commit(times_bugs_fixed, dtimes):
     return bug_from_start_time, from_start_time
 
 
-def plot_commit_and_bug_rates(from_start_time, bug_from_start_time):
+def plot_commit_and_bug_rates(from_start_time, bug_from_start_time,
+                              number_of_authors):
     figure('cumulative commits, time logged')
     plot(np.log(from_start_time), list(range(len(from_start_time), 0, -1)))
     xlabel('Time (logged days)')
@@ -306,6 +307,12 @@ def plot_commit_and_bug_rates(from_start_time, bug_from_start_time):
          list(range(len(bug_from_start_time), -1, -1)))
     xlabel('Time (days)')
     ylabel('Total bugs')
+    # more people means more commits, and broadly linearly, so
+    figure('commits per user')
+    plot(from_start_time,
+         np.arange(len(from_start_time), 0, -1) / number_of_authors)
+    xlabel('Time (days)')
+    ylabel('Total commits per author')
     # log - 1 fits would work here if needed
     # form of 1 - exp(kx) may be preferred, as a decay process
 
@@ -344,7 +351,8 @@ if __name__ == "__main__":
             except TypeError:  # no commits present
                 continue
 
-            plot_commit_and_bug_rates(from_start_time, bug_from_start_time)
+            plot_commit_and_bug_rates(from_start_time, bug_from_start_time,
+                                      len(authors))
         if next_page:
             cursor = new_cursor
         else:
@@ -375,7 +383,8 @@ if __name__ == "__main__":
                 build_times_from_first_commit(times_bugs_fixed, dtimes)
         except TypeError:  # no commits present
             continue
-        plot_commit_and_bug_rates(from_start_time, bug_from_start_time)
+        plot_commit_and_bug_rates(from_start_time, bug_from_start_time,
+                                  len(authors))
 
     figure('Bug find rate, by project, ascending order')
     plot(sorted(bug_find_rate))
