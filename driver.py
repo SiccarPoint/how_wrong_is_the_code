@@ -315,6 +315,7 @@ if __name__ == "__main__":
     topic = 'physics'
     bug_find_rate = []  # i.e., per bugs per commit
     total_authors = []
+    total_commits_per_repo = []
     long_repos = []  # will store [num_commits, name, owner]
     cursor = None  # leave this alone
     for i in range(pages):
@@ -331,6 +332,7 @@ if __name__ == "__main__":
                 commits)
 
             total_authors.append(len(authors))
+            total_commits_per_repo.append(total_commits)
             try:
                 bug_find_rate.append(len(times_bugs_fixed) / len(dtimes))
             except ZeroDivisionError:
@@ -363,6 +365,7 @@ if __name__ == "__main__":
             commits
         )
         total_authors.append(len(authors))
+        total_commits_per_repo.append(len(commits))
         try:
             bug_find_rate.append(len(times_bugs_fixed) / len(dtimes))
         except ZeroDivisionError:
@@ -381,3 +384,20 @@ if __name__ == "__main__":
     plot(total_authors, bug_find_rate, 'x')
     xlabel('Number of authors committing to code')
     ylabel('Fraction of all commits finding bugs')
+
+    author_numbers = list(set(total_authors))
+    median_author_num_commits = []
+    mean_author_num_commits = []
+    for author_num in author_numbers:
+        commits_for_author_num = np.equal(total_authors, author_num)
+        median_author_num_commits.append(np.median(
+            np.array(total_commits_per_repo)[commits_for_author_num]
+        ))
+        mean_author_num_commits.append(np.mean(
+            np.array(total_commits_per_repo)[commits_for_author_num]
+        ))
+    figure('commits vs authors')
+    plot(total_authors, total_commits_per_repo, 'x')
+    plot(author_numbers, median_author_num_commits, 'o')
+    xlabel('Number of authors committing to code')
+    ylabel('Total number of commits')
