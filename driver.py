@@ -388,6 +388,7 @@ if __name__ == "__main__":
     bug_rate_median_per_repo = []
     bug_rate_mean_per_repo = []
     long_repos = []  # will store [num_commits, name, owner]
+    coveralls_count = 0
     cursor = None  # leave this alone
     for i in range(pages):
         data, next_page, new_cursor = get_data(20, topic, cursor, HEADER)
@@ -427,12 +428,19 @@ if __name__ == "__main__":
             commit_rate_mean_per_repo.append(commit_rate_mean)
             bug_rate_median_per_repo.append(bug_rate_median)
             bug_rate_mean_per_repo.append(bug_rate_mean)
+            if 'coveralls' in badges:
+                coveralls_count += 1
         if next_page:
             cursor = new_cursor
         else:
             break
+    print('*****')
+    short_repos = len(commit_rate_mean_per_repo)
+    short_count = coveralls_count
+    print('Of ' + str(short_repos) + ' short repositories, '
+          + str(coveralls_count) + ' use coveralls')
 
-    print('***')
+    print('*****')
     for repo in sorted(long_repos)[::-1]:
         print(repo)
     print('***')
@@ -464,6 +472,17 @@ if __name__ == "__main__":
         commit_rate_mean_per_repo.append(commit_rate_mean)
         bug_rate_median_per_repo.append(bug_rate_median)
         bug_rate_mean_per_repo.append(bug_rate_mean)
+        if 'coveralls' in badges:
+            coveralls_count += 1
+
+    print('*****')
+    total_repos = len(commit_rate_mean_per_repo)
+    long_repos = total_repos - short_repos
+    long_count = coveralls_count - short_count
+    print('Of ' + str(long_repos) + ' long repositories, '
+          + str(long_count) + ' use coveralls')
+    print('Of ' + str(total_repos) + ' total repositories, '
+          + str(coveralls_count) + ' use coveralls')
 
     figure('Bug find rate, by project, ascending order')
     plot(sorted(bug_find_rate))
