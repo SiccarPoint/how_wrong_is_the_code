@@ -337,27 +337,32 @@ def calc_event_rate(times_of_events):
 
 
 def plot_commit_and_bug_rates(from_start_time, bug_from_start_time,
-                              number_of_authors):
+                              number_of_authors, highlight=False):
+
+    if highlight:
+        fmt = 'k'
+    else:
+        fmt = ''
     # figure('cumulative commits, time logged')
     # plot(np.log(from_start_time), list(range(len(from_start_time), 0, -1)))
     # xlabel('Time (logged days)')
     # ylabel('Total commits')
 
     figure('cumulative commits')
-    plot(from_start_time, list(range(len(from_start_time), 0, -1)))
+    plot(from_start_time, list(range(len(from_start_time), 0, -1)), fmt)
     xlabel('Time (days)')
     ylabel('Total commits')
 
     figure('cumulative bugs')
     plot(bug_from_start_time + [0, ],
-         list(range(len(bug_from_start_time), -1, -1)))
+         list(range(len(bug_from_start_time), -1, -1)), fmt)
     xlabel('Time (days)')
     ylabel('Total bugs')
 
     # more people means more commits, and broadly linearly, so
     figure('commits per user')
     plot(from_start_time,
-         np.arange(len(from_start_time), 0, -1) / number_of_authors)
+         np.arange(len(from_start_time), 0, -1) / number_of_authors, fmt)
     xlabel('Time (days)')
     ylabel('Total commits per author')
     # log - 1 fits would work here if needed
@@ -367,19 +372,21 @@ def plot_commit_and_bug_rates(from_start_time, bug_from_start_time,
     commit_rates, commit_rate_median, commit_rate_mean = calc_event_rate(
         from_start_time
     )
-    plot(sorted(commit_rates), '-')
+    plot(sorted(commit_rates), fmt + '-')
 
     figure('bug rate')
     bug_rates, bug_rate_median, bug_rate_mean = calc_event_rate(
         bug_from_start_time
     )
-    plot(sorted(bug_rates), '-')
+    plot(sorted(bug_rates), fmt + '-')
     return commit_rate_median, commit_rate_mean, bug_rate_median, bug_rate_mean
 
 
 if __name__ == "__main__":
     pages = 10
-    topic = 'terrainbento'  # 'physics'
+    topic = 'chemistry'  # 'landlab', 'terrainbento', 'physics', 'chemistry', 'doi.org'
+    # the search for Landlab isn't pulling landlab/landlab as a long repo!? Check
+    print('Searching on ' + topic)
     bug_find_rate = []  # i.e., per bugs per commit
     total_authors = []
     total_commits_per_repo = []
@@ -419,16 +426,19 @@ if __name__ == "__main__":
             except TypeError:  # no commits present
                 continue
 
+            if 'coveralls' in badges:
+                coveralls_count.append([enum, owner, name])
+                emph = True
+            else:
+                emph = False
             (commit_rate_median, commit_rate_mean,
              bug_rate_median, bug_rate_mean) = plot_commit_and_bug_rates(
-                from_start_time, bug_from_start_time, len(authors)
+                from_start_time, bug_from_start_time, len(authors), emph
             )
             commit_rate_median_per_repo.append(commit_rate_median)
             commit_rate_mean_per_repo.append(commit_rate_mean)
             bug_rate_median_per_repo.append(bug_rate_median)
             bug_rate_mean_per_repo.append(bug_rate_mean)
-            if 'coveralls' in badges:
-                coveralls_count.append([enum, owner, name])
         if next_page:
             cursor = new_cursor
         else:
@@ -472,15 +482,18 @@ if __name__ == "__main__":
                 build_times_from_first_commit(times_bugs_fixed, dtimes)
         except TypeError:  # no commits present
             continue
+        if 'coveralls' in badges:
+            coveralls_count.append([enum_long + enum, owner, name])
+            emph = True
+        else:
+            emph = False
         commit_rate_median, commit_rate_mean, bug_rate_median, bug_rate_mean = \
             plot_commit_and_bug_rates(from_start_time, bug_from_start_time,
-                                      len(authors))
+                                      len(authors), emph)
         commit_rate_median_per_repo.append(commit_rate_median)
         commit_rate_mean_per_repo.append(commit_rate_mean)
         bug_rate_median_per_repo.append(bug_rate_median)
         bug_rate_mean_per_repo.append(bug_rate_mean)
-        if 'coveralls' in badges:
-            coveralls_count.append([enum_long + enum, owner, name])
 
     print('*****')
     total_repos = len(commit_rate_mean_per_repo)
