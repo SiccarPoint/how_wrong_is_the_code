@@ -24,6 +24,11 @@ q = '''query($first: Int!, $query: String!, $repo_after: String, $commits_after:
           }
           createdAt
           pushedAt
+		  object(expression: "master:README.md") {
+            ... on Blob {
+              text
+            }
+          }
           ref(qualifiedName: "master") {
             target {
               ... on Commit {
@@ -71,11 +76,6 @@ q = '''query($first: Int!, $query: String!, $repo_after: String, $commits_after:
 q_single_repo = '''
 query ($name: String!, $owner: String!, $commits_after: String) {
   repository(name: $name, owner: $owner) {
-    languages (first: 20) {
-      nodes {
-        name
-      }
-    }
     object(expression: "master") {
       ... on Repository {
         languages {
@@ -176,6 +176,7 @@ def process_aquired_data(aquired_repos):
             last_push_date = rep_data['pushedAt']
             commit_page_data = rep_data['ref']['target']['history']
             total_commits = rep_data['ref']['target']['history']['totalCount']
+            readme_text = rep_data['object']['text']
             has_next_page = commit_page_data['pageInfo']['hasNextPage']
             commits = commit_page_data['edges']  # this is the list of <=100 commits
             dt_start = convert_datetime(creation_date)
@@ -190,7 +191,7 @@ def process_aquired_data(aquired_repos):
 
         yield (rep_data, nameowner, name, owner, creation_date, last_push_date,
                commit_page_data, has_next_page, commits, total_commits,
-               languages)
+               languages, readme_text)
 
 
 def convert_datetime(datetime_str):
@@ -276,6 +277,8 @@ def is_commit_bug(message_headline, message):
     for mess in (message_headline, message):
         found = re.search(allposs, mess) or found
     return found
+
+
 
 
 def build_commit_and_bug_timelines(commits):
@@ -378,9 +381,11 @@ if __name__ == "__main__":
     for i in range(pages):
         data, next_page, new_cursor = get_data(20, topic, cursor, HEADER)
 
-        for (rep_data, nameowner, name, owner, creation_date,
-             last_push_date, commit_page_data, has_next_page,
-             commits, total_commits, languages) in process_aquired_data(data):
+        for (
+                rep_data, nameowner, name, owner, creation_date,
+                last_push_date, commit_page_data, has_next_page,
+                commits, total_commits, languages, readme_text
+                ) in process_aquired_data(data):
             if total_commits > 100:
                 long_repos.append([total_commits, name, owner, languages])
                 continue
