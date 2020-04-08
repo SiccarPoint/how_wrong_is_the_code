@@ -272,12 +272,19 @@ def is_commit_bug(message_headline, message):
     return found
 
 
-def look_for_badges():
+def look_for_badges(readme_text):
     """
     Searches readme_text for badges. Returns list of found badges.
-    These at the moment are
+    These at the moment are coveralls and doi.
     """
-    pass
+    coveralls_str = 'https://coveralls.io/'
+    doi_str = 'https://doi.org/'
+    badges = set()
+    if re.search(coveralls_str, readme_text):
+        badges.add('coveralls')
+    if re.search(doi_str, readme_text):
+        badges.add('doi')
+    return badges
 
 
 def build_commit_and_bug_timelines(commits):
@@ -367,7 +374,7 @@ def plot_commit_and_bug_rates(from_start_time, bug_from_start_time,
 
 if __name__ == "__main__":
     pages = 10
-    topic = 'physics'
+    topic = 'terrainbento'  # 'physics'
     bug_find_rate = []  # i.e., per bugs per commit
     total_authors = []
     total_commits_per_repo = []
@@ -385,8 +392,10 @@ if __name__ == "__main__":
                 last_push_date, commit_page_data, has_next_page,
                 commits, total_commits, languages, readme_text
                 ) in process_aquired_data(data):
+            badges = look_for_badges(readme_text)
             if total_commits > 100:
-                long_repos.append([total_commits, name, owner, languages])
+                long_repos.append([total_commits, name, owner,
+                                   languages, badges])
                 continue
 
             times_bugs_fixed, dtimes, authors = build_commit_and_bug_timelines(
@@ -424,7 +433,7 @@ if __name__ == "__main__":
     print('***')
     input('Found ' + str(len(long_repos)) + ' long repos. Proceed? [Enter]')
 
-    for count, name, owner, languages in sorted(long_repos)[::-1]:
+    for count, name, owner, languages, badges in sorted(long_repos)[::-1]:
         print('Reading more commits for ' + owner + '/' + name
               + ', total commits: ' + str(count))
         commits = get_commits_single_repo(name, owner, HEADER, max_iters=10)
