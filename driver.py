@@ -77,13 +77,6 @@ q_single_repo = '''
 query ($name: String!, $owner: String!, $commits_after: String) {
   repository(name: $name, owner: $owner) {
     object(expression: "master") {
-      ... on Repository {
-        languages {
-          nodes {
-            name
-          }
-        }
-      }
       ...on Commit {
         history(first: 100, after: $commits_after) {
           totalCount
@@ -279,6 +272,12 @@ def is_commit_bug(message_headline, message):
     return found
 
 
+def look_for_badges():
+    """
+    Searches readme_text for badges. Returns list of found badges.
+    These at the moment are
+    """
+    pass
 
 
 def build_commit_and_bug_timelines(commits):
