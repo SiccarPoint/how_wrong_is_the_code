@@ -434,15 +434,17 @@ if __name__ == "__main__":
             cursor = new_cursor
         else:
             break
+
+    print('*****')
+    for repo in sorted(long_repos)[::-1]:
+        print(repo)
+
     print('*****')
     short_repos = len(commit_rate_mean_per_repo)
     short_count = coveralls_count
     print('Of ' + str(short_repos) + ' short repositories, '
           + str(coveralls_count) + ' use coveralls')
 
-    print('*****')
-    for repo in sorted(long_repos)[::-1]:
-        print(repo)
     print('***')
     input('Found ' + str(len(long_repos)) + ' long repos. Proceed? [Enter]')
 
