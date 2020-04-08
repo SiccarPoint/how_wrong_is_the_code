@@ -388,16 +388,15 @@ if __name__ == "__main__":
     bug_rate_median_per_repo = []
     bug_rate_mean_per_repo = []
     long_repos = []  # will store [num_commits, name, owner]
-    coveralls_count = 0
+    coveralls_count = []
     cursor = None  # leave this alone
     for i in range(pages):
         data, next_page, new_cursor = get_data(20, topic, cursor, HEADER)
-
-        for (
+        for enum, (
                 rep_data, nameowner, name, owner, creation_date,
                 last_push_date, commit_page_data, has_next_page,
                 commits, total_commits, languages, readme_text
-                ) in process_aquired_data(data):
+                ) in enumerate(process_aquired_data(data)):
             badges = look_for_badges(readme_text)
             if total_commits > 100:
                 long_repos.append([total_commits, name, owner,
@@ -429,7 +428,7 @@ if __name__ == "__main__":
             bug_rate_median_per_repo.append(bug_rate_median)
             bug_rate_mean_per_repo.append(bug_rate_mean)
             if 'coveralls' in badges:
-                coveralls_count += 1
+                coveralls_count.append([enum, owner, name])
         if next_page:
             cursor = new_cursor
         else:
@@ -441,14 +440,20 @@ if __name__ == "__main__":
 
     print('*****')
     short_repos = len(commit_rate_mean_per_repo)
-    short_count = coveralls_count
+    short_count = len(coveralls_count)
     print('Of ' + str(short_repos) + ' short repositories, '
-          + str(coveralls_count) + ' use coveralls')
+          + str(short_count) + ' use coveralls')
+    if short_count > 0:
+        print("They are:")
+        for ln in coveralls_count:
+            print(ln)
 
     print('***')
     input('Found ' + str(len(long_repos)) + ' long repos. Proceed? [Enter]')
 
-    for count, name, owner, languages, badges in sorted(long_repos)[::-1]:
+    for enum_long, (
+                count, name, owner, languages, badges
+            ) in enumerate(sorted(long_repos)[::-1]):
         print('Reading more commits for ' + owner + '/' + name
               + ', total commits: ' + str(count))
         commits = get_commits_single_repo(name, owner, HEADER, max_iters=10)
@@ -475,16 +480,24 @@ if __name__ == "__main__":
         bug_rate_median_per_repo.append(bug_rate_median)
         bug_rate_mean_per_repo.append(bug_rate_mean)
         if 'coveralls' in badges:
-            coveralls_count += 1
+            coveralls_count.append([enum_long + enum, owner, name])
 
     print('*****')
     total_repos = len(commit_rate_mean_per_repo)
     long_repos = total_repos - short_repos
-    long_count = coveralls_count - short_count
+    long_count = len(coveralls_count) - short_count
     print('Of ' + str(long_repos) + ' long repositories, '
           + str(long_count) + ' use coveralls')
     print('Of ' + str(total_repos) + ' total repositories, '
-          + str(coveralls_count) + ' use coveralls')
+          + str(len(coveralls_count)) + ' use coveralls')
+    if len(coveralls_count) > 0:
+        print(
+        "This is a list of all the coveralls repositories, ending with "
+        + "the long repositories > 100 commits, listed as "
+        + "[ID_in_repo_lists, owner, name]:"
+        )
+        for ln in coveralls_count:
+            print(ln)
 
     figure('Bug find rate, by project, ascending order')
     plot(sorted(bug_find_rate))
