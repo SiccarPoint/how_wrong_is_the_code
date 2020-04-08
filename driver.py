@@ -338,19 +338,22 @@ def calc_event_rate(times_of_events):
 
 def plot_commit_and_bug_rates(from_start_time, bug_from_start_time,
                               number_of_authors):
-    figure('cumulative commits, time logged')
-    plot(np.log(from_start_time), list(range(len(from_start_time), 0, -1)))
-    xlabel('Time (logged days)')
-    ylabel('Total commits')
+    # figure('cumulative commits, time logged')
+    # plot(np.log(from_start_time), list(range(len(from_start_time), 0, -1)))
+    # xlabel('Time (logged days)')
+    # ylabel('Total commits')
+
     figure('cumulative commits')
     plot(from_start_time, list(range(len(from_start_time), 0, -1)))
     xlabel('Time (days)')
     ylabel('Total commits')
+
     figure('cumulative bugs')
     plot(bug_from_start_time + [0, ],
          list(range(len(bug_from_start_time), -1, -1)))
     xlabel('Time (days)')
     ylabel('Total bugs')
+
     # more people means more commits, and broadly linearly, so
     figure('commits per user')
     plot(from_start_time,
@@ -359,11 +362,13 @@ def plot_commit_and_bug_rates(from_start_time, bug_from_start_time,
     ylabel('Total commits per author')
     # log - 1 fits would work here if needed
     # form of 1 - exp(kx) may be preferred, as a decay process
+
     figure('commit rate')
     commit_rates, commit_rate_median, commit_rate_mean = calc_event_rate(
         from_start_time
     )
     plot(sorted(commit_rates), '-')
+
     figure('bug rate')
     bug_rates, bug_rate_median, bug_rate_mean = calc_event_rate(
         bug_from_start_time
