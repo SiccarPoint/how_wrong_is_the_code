@@ -17,6 +17,11 @@ q = '''query($first: Int!, $query: String!, $repo_after: String, $commits_after:
           owner {
             login
           }
+          languages (first: 20) {
+            nodes {
+              name
+            }
+          }
           createdAt
           pushedAt
           ref(qualifiedName: "master") {
@@ -66,7 +71,19 @@ q = '''query($first: Int!, $query: String!, $repo_after: String, $commits_after:
 q_single_repo = '''
 query ($name: String!, $owner: String!, $commits_after: String) {
   repository(name: $name, owner: $owner) {
+    languages (first: 20) {
+      nodes {
+        name
+      }
+    }
     object(expression: "master") {
+      ... on Repository {
+        languages {
+          nodes {
+            name
+          }
+        }
+      }
       ...on Commit {
         history(first: 100, after: $commits_after) {
           totalCount
@@ -154,6 +171,7 @@ def process_aquired_data(aquired_repos):
             nameowner = rep_data['nameWithOwner']
             name = rep_data['name']
             owner = rep_data['owner']['login']
+            languages_list = rep_data['languages']['nodes']
             creation_date = rep_data['createdAt']
             last_push_date = rep_data['pushedAt']
             commit_page_data = rep_data['ref']['target']['history']
@@ -162,6 +180,7 @@ def process_aquired_data(aquired_repos):
             commits = commit_page_data['edges']  # this is the list of <=100 commits
             dt_start = convert_datetime(creation_date)
             dt_last_push = convert_datetime(last_push_date)
+            languages = set(lang['name'] for lang in languages_list)
         except TypeError:
             continue
         dt_delta = dt_last_push-dt_start
@@ -170,7 +189,8 @@ def process_aquired_data(aquired_repos):
 
 
         yield (rep_data, nameowner, name, owner, creation_date, last_push_date,
-               commit_page_data, has_next_page, commits, total_commits)
+               commit_page_data, has_next_page, commits, total_commits,
+               languages)
 
 
 def convert_datetime(datetime_str):
@@ -360,9 +380,9 @@ if __name__ == "__main__":
 
         for (rep_data, nameowner, name, owner, creation_date,
              last_push_date, commit_page_data, has_next_page,
-             commits, total_commits) in process_aquired_data(data):
+             commits, total_commits, languages) in process_aquired_data(data):
             if total_commits > 100:
-                long_repos.append([total_commits, name, owner])
+                long_repos.append([total_commits, name, owner, languages])
                 continue
 
             times_bugs_fixed, dtimes, authors = build_commit_and_bug_timelines(
@@ -400,7 +420,7 @@ if __name__ == "__main__":
     print('***')
     input('Found ' + str(len(long_repos)) + ' long repos. Proceed? [Enter]')
 
-    for count, name, owner in sorted(long_repos)[::-1]:
+    for count, name, owner, languages in sorted(long_repos)[::-1]:
         print('Reading more commits for ' + owner + '/' + name
               + ', total commits: ' + str(count))
         commits = get_commits_single_repo(name, owner, HEADER, max_iters=10)
