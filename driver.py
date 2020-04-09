@@ -402,6 +402,12 @@ def plot_commit_and_bug_rates(from_start_time, bug_from_start_time,
     return commit_rate_median, commit_rate_mean, bug_rate_median, bug_rate_mean
 
 
+def moving_average(a, n=10) :
+    ret = np.cumsum(a, dtype=float)
+    ret[n:] = ret[n:] - ret[:-n]
+    return ret[n - 1:] / n
+
+
 if __name__ == "__main__":
     pages = 10
     max_iters_for_commits = 10
@@ -597,16 +603,25 @@ if __name__ == "__main__":
     xlabel('Fraction of all commits finding bugs')
 
     figure('Total committers vs bug fraction rate')
+    bug_find_rate_array = np.array(bug_find_rate)
+    total_authors_array = np.array(total_authors)
     plot(total_authors, bug_find_rate, 'x')
     plot(author_numbers, median_author_bug_fraction, 'o')
-    plot(np.array(total_authors)[cov_indices],
-         np.array(bug_find_rate)[cov_indices], 'kx')
+    plot(total_authors_array[cov_indices],
+         bug_find_rate_array[cov_indices], 'kx')
     xlabel('Number of authors committing to code')
     ylabel('Fraction of all commits finding bugs')
 
     figure('Total commits vs bug fraction rate')
+    total_commits_from_API_array = np.array(total_commits_from_API)
+    total_commits_order = np.argsort(total_commits_from_API_array)
+    total_commits_IN_order = total_commits_from_API_array[total_commits_order]
+    bug_find_rate_ordered = bug_find_rate_array[total_commits_order]
+    bug_find_rate_moving_avg = moving_average(bug_find_rate_ordered, n=20)
+
     plot(total_commits_from_API, bug_find_rate, 'x')
-    plot(np.array(total_commits_from_API)[cov_indices],
-         np.array(bug_find_rate)[cov_indices], 'kx')
+    plot(total_commits_IN_order[10:-9], bug_find_rate_moving_avg, '-')
+    plot(total_commits_from_API_array[cov_indices],
+         bug_find_rate_array[cov_indices], 'kx')
     xlabel('Total number of commits')
     ylabel('Fraction of all commits finding bugs')
