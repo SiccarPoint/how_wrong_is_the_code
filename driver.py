@@ -544,13 +544,13 @@ if __name__ == "__main__":
     plot(total_authors, total_commits_per_repo, 'x')
     plot(author_numbers, median_author_num_commits, 'o')
     plot(np.array(total_authors)[cov_indices],
-         np.array(total_commits_per_repo)[cov_indices], kx)
+         np.array(total_commits_per_repo)[cov_indices], 'kx')
     xlabel('Number of authors committing to code')
     ylabel('Total number of commits')
 
     figure('bugs vs authors')
     plot(total_authors, total_bugs_per_repo, 'x')
     plot(np.array(total_authors)[cov_indices],
-         np.array(total_bugs_per_repo)[cov_indices], kx)
+         np.array(total_bugs_per_repo)[cov_indices], 'kx')
     xlabel('Number of authors committing to code')
     ylabel('Total number of bugs')
