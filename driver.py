@@ -405,12 +405,11 @@ def plot_commit_and_bug_rates(from_start_time, bug_from_start_time,
 if __name__ == "__main__":
     pages = 10
     max_iters_for_commits = 10
-    topic = 'physics'  # 'landlab', 'terrainbento', 'physics', 'chemistry', 'doi.org'
+    topic = 'chemistry'  # 'landlab', 'terrainbento', 'physics', 'chemistry', 'doi.org'
     # the search for Landlab isn't pulling landlab/landlab as a long repo!? Check
     print('Searching on ' + topic)
     bug_find_rate = []  # i.e., per bugs per commit
     total_authors = []
-    total_commits_per_repo = []
     total_bugs_per_repo = []
     commit_rate_median_per_repo = []
     commit_rate_mean_per_repo = []
@@ -441,7 +440,7 @@ if __name__ == "__main__":
             # Katherine Barnhart vs Katy Barnhart vs kbarnhart
             # Not much we can do about this; hope it comes out in the wash
             total_bugs_per_repo.append(len(times_bugs_fixed))
-            total_commits_per_repo.append(total_commits)
+            total_commits_from_API.append(total_commits)
             try:
                 bug_find_rate.append(len(times_bugs_fixed) / len(dtimes))
             except ZeroDivisionError:
@@ -466,7 +465,6 @@ if __name__ == "__main__":
             commit_rate_mean_per_repo.append(commit_rate_mean)
             bug_rate_median_per_repo.append(bug_rate_median)
             bug_rate_mean_per_repo.append(bug_rate_mean)
-            total_commits_from_API.append(total_commits)
         if next_page:
             cursor = new_cursor
         else:
@@ -501,7 +499,6 @@ if __name__ == "__main__":
             commits
         )
         total_authors.append(len(authors))
-        total_commits_per_repo.append(len(commits))
         total_bugs_per_repo.append(len(times_bugs_fixed))
         total_commits_from_API.append(total_commits)
         try:
@@ -525,7 +522,6 @@ if __name__ == "__main__":
         commit_rate_mean_per_repo.append(commit_rate_mean)
         bug_rate_median_per_repo.append(bug_rate_median)
         bug_rate_mean_per_repo.append(bug_rate_mean)
-        total_commits_from_API.append(total_commits)
 
     print('*****')
     total_repos = len(commit_rate_mean_per_repo)
