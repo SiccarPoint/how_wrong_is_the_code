@@ -13,6 +13,7 @@ q = '''query($first: Int!, $query: String!, $repo_after: String, $commits_after:
       node {
         ... on Repository {
           nameWithOwner
+          diskUsage
           name
           owner {
             login
@@ -237,7 +238,9 @@ def yield_commits_data(commits):
 def is_commit_bug(message_headline, message):
     """
     Check if the commit appears to be a bug based on the commit text and the
-    keywords: bug, mend, broken
+    keywords: bug, mend, broken, forgot, work(s) right/correctly, deal(s) with,
+    typo, wrong
+    (established from reviewing project commit logs)
 
     Note that this won't be able to pick bugs folded in with PRs (...yet)
 
@@ -260,12 +263,24 @@ def is_commit_bug(message_headline, message):
     >>> is_commit_bug(message1, header2)
     True
     """
+    # regex syntax reminder: ^ start of line, $ end of line, \W not word char
+    # s? s zero or one time
     bug1 = r'(^|\W)[Bb]ug($|\W)'
     bug2 = r'(^|\W)[Bb]uggy($|\W)'
     bug3 = r'(^|\W)[Bb]ugs($|\W)'
     mend = r'(^|\W)[Mm]end($|\W)'
     broken = r'(^|\W)[Bb]roken($|\W)'
-    allposs = bug1 + '|' + bug2 + '|' + bug3 + '|' + mend + '|' + broken
+    forgot = r'(^|\W)[Ff]orgot($|\W)'
+    worksright = r'(^|\W)works? right($|\W)'
+    workscorrectly = r'(^|\W)works? correctly($|\W)'
+    dealwith = r'(^|\W)[Dd]eals? with($|\W)'
+    typo = r'(^|\W)[Tt]ypo($|\W)'
+    wrong = r'(^|\W)[Ww]rong($|\W)'
+    allposs = (
+        bug1 + '|' + bug2 + '|' + bug3 + '|' + mend + '|' + broken + '|'
+        + forgot + '|' + worksright + '|' + workscorrectly + '|'
+        + dealwith + '|' + typo + '|' + wrong
+    )
     found = False
     for mess in (message_headline, message):
         found = re.search(allposs, mess) or found
@@ -368,13 +383,13 @@ def plot_commit_and_bug_rates(from_start_time, bug_from_start_time,
     # log - 1 fits would work here if needed
     # form of 1 - exp(kx) may be preferred, as a decay process
 
-    figure('commit rate')
+    #figure('commit rate')
     commit_rates, commit_rate_median, commit_rate_mean = calc_event_rate(
         from_start_time
     )
     #plot(sorted(commit_rates), fmt + '-')
 
-    figure('bug rate')
+    #figure('bug rate')
     bug_rates, bug_rate_median, bug_rate_mean = calc_event_rate(
         bug_from_start_time
     )
@@ -384,7 +399,7 @@ def plot_commit_and_bug_rates(from_start_time, bug_from_start_time,
 
 if __name__ == "__main__":
     pages = 10
-    topic = 'landlab'  # 'landlab', 'terrainbento', 'physics', 'chemistry', 'doi.org'
+    topic = 'physics'  # 'landlab', 'terrainbento', 'physics', 'chemistry', 'doi.org'
     # the search for Landlab isn't pulling landlab/landlab as a long repo!? Check
     print('Searching on ' + topic)
     bug_find_rate = []  # i.e., per bugs per commit
