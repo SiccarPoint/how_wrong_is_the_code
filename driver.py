@@ -34,6 +34,8 @@ q = '''query($first: Int!, $query: String!, $repo_after: String, $commits_after:
             target {
               ... on Commit {
  #               id
+                additions
+                deletions
                 history(first: 100, after: $commits_after) {
                   totalCount
                   pageInfo {
@@ -79,6 +81,8 @@ query ($name: String!, $owner: String!, $commits_after: String) {
   repository(name: $name, owner: $owner) {
     object(expression: "master") {
       ...on Commit {
+        additions
+        deletions
         history(first: 100, after: $commits_after) {
           totalCount
           pageInfo {
@@ -400,6 +404,7 @@ def plot_commit_and_bug_rates(from_start_time, bug_from_start_time,
 
 if __name__ == "__main__":
     pages = 10
+    max_iters_for_commits = 10
     topic = 'physics'  # 'landlab', 'terrainbento', 'physics', 'chemistry', 'doi.org'
     # the search for Landlab isn't pulling landlab/landlab as a long repo!? Check
     print('Searching on ' + topic)
@@ -413,6 +418,7 @@ if __name__ == "__main__":
     bug_rate_mean_per_repo = []
     long_repos = []  # will store [num_commits, name, owner]
     coveralls_count = []
+    total_commits_from_API = []
     cursor = None  # leave this alone
     for i in range(pages):
         data, next_page, new_cursor = get_data(20, topic, cursor, HEADER)
@@ -424,7 +430,7 @@ if __name__ == "__main__":
             badges = look_for_badges(readme_text)
             if total_commits > 100:
                 long_repos.append([total_commits, name, owner,
-                                   languages, badges])
+                                   languages, badges, total_commits])
                 continue
 
             times_bugs_fixed, dtimes, authors = build_commit_and_bug_timelines(
@@ -460,6 +466,7 @@ if __name__ == "__main__":
             commit_rate_mean_per_repo.append(commit_rate_mean)
             bug_rate_median_per_repo.append(bug_rate_median)
             bug_rate_mean_per_repo.append(bug_rate_mean)
+            total_commits_from_API.append(total_commits)
         if next_page:
             cursor = new_cursor
         else:
@@ -483,11 +490,12 @@ if __name__ == "__main__":
     input('Found ' + str(len(long_repos)) + ' long repos. Proceed? [Enter]')
 
     for enum_long, (
-                count, name, owner, languages, badges
+                count, name, owner, languages, badges, total_commits
             ) in enumerate(sorted(long_repos)[::-1]):
         print('Reading more commits for ' + owner + '/' + name
               + ', total commits: ' + str(count))
-        commits = get_commits_single_repo(name, owner, HEADER, max_iters=10)
+        commits = get_commits_single_repo(name, owner, HEADER,
+                                          max_iters=max_iters_for_commits)
         print('Successfully loaded ' + str(len(commits)) + ' commits')
         times_bugs_fixed, dtimes, authors = build_commit_and_bug_timelines(
             commits
@@ -516,6 +524,7 @@ if __name__ == "__main__":
         commit_rate_mean_per_repo.append(commit_rate_mean)
         bug_rate_median_per_repo.append(bug_rate_median)
         bug_rate_mean_per_repo.append(bug_rate_mean)
+        total_commits_from_API.append(total_commits)
 
     print('*****')
     total_repos = len(commit_rate_mean_per_repo)
@@ -544,23 +553,23 @@ if __name__ == "__main__":
     for author_num in author_numbers:
         commits_for_author_num = np.equal(total_authors, author_num)
         median_author_num_commits.append(np.median(
-            np.array(total_commits_per_repo)[commits_for_author_num]
+            np.array(total_commits_from_API)[commits_for_author_num]
         ))
         median_author_bug_fraction.append(np.median(
             np.array(bug_find_rate)[commits_for_author_num]
         ))
         mean_author_num_commits.append(np.mean(
-            np.array(total_commits_per_repo)[commits_for_author_num]
+            np.array(total_commits_from_API)[commits_for_author_num]
         ))
         mean_author_bug_fraction.append(np.mean(
             np.array(bug_find_rate)[commits_for_author_num]
         ))
 
     figure('commits vs authors')
-    plot(total_authors, total_commits_per_repo, 'x')
+    plot(total_authors, total_commits_from_API, 'x')
     plot(author_numbers, median_author_num_commits, 'o')
     plot(np.array(total_authors)[cov_indices],
-         np.array(total_commits_per_repo)[cov_indices], 'kx')
+         np.array(total_commits_from_API)[cov_indices], 'kx')
     xlabel('Number of authors committing to code')
     ylabel('Total number of commits')
 
@@ -584,8 +593,8 @@ if __name__ == "__main__":
     ylabel('Fraction of all commits finding bugs')
 
     figure('Total commits vs bug fraction rate')
-    plot(total_commits_per_repo, bug_find_rate, 'x')
-    plot(np.array(total_commits_per_repo)[cov_indices],
+    plot(total_commits_from_API, bug_find_rate, 'x')
+    plot(np.array(total_commits_from_API)[cov_indices],
          np.array(bug_find_rate)[cov_indices], 'kx')
     xlabel('Total number of commits')
     ylabel('Fraction of all commits finding bugs')
