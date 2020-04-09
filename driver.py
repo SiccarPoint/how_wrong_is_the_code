@@ -535,27 +535,27 @@ if __name__ == "__main__":
             print(ln)
 
     cov_indices = [cov[0] for cov in coveralls_count]
-    figure('Bug find fraction, by project, ascending order')
-    plot(sorted(bug_find_rate))
-    ylabel('Fraction of all commits finding bugs')
-    figure('Total committers vs bug fraction rate')
-    plot(total_authors, bug_find_rate, 'x')
-    plot(np.array(total_authors)[cov_indices],
-         np.array(bug_find_rate)[cov_indices], 'kx')
-    xlabel('Number of authors committing to code')
-    ylabel('Fraction of all commits finding bugs')
 
     author_numbers = list(set(total_authors))
     median_author_num_commits = []
     mean_author_num_commits = []
+    median_author_bug_fraction = []
+    mean_author_bug_fraction = []
     for author_num in author_numbers:
         commits_for_author_num = np.equal(total_authors, author_num)
         median_author_num_commits.append(np.median(
             np.array(total_commits_per_repo)[commits_for_author_num]
         ))
+        median_author_bug_fraction.append(np.median(
+            np.array(bug_find_rate)[commits_for_author_num]
+        ))
         mean_author_num_commits.append(np.mean(
             np.array(total_commits_per_repo)[commits_for_author_num]
         ))
+        mean_author_bug_fraction.append(np.mean(
+            np.array(bug_find_rate)[commits_for_author_num]
+        ))
+
     figure('commits vs authors')
     plot(total_authors, total_commits_per_repo, 'x')
     plot(author_numbers, median_author_num_commits, 'o')
@@ -570,3 +570,15 @@ if __name__ == "__main__":
          np.array(total_bugs_per_repo)[cov_indices], 'kx')
     xlabel('Number of authors committing to code')
     ylabel('Total number of bugs')
+
+    figure('Bug find fraction, by project, ascending order')
+    plot(sorted(bug_find_rate))
+    ylabel('Fraction of all commits finding bugs')
+
+    figure('Total committers vs bug fraction rate')
+    plot(total_authors, bug_find_rate, 'x')
+    plot(author_numbers, median_author_bug_fraction, 'o')
+    plot(np.array(total_authors)[cov_indices],
+         np.array(bug_find_rate)[cov_indices], 'kx')
+    xlabel('Number of authors committing to code')
+    ylabel('Fraction of all commits finding bugs')
