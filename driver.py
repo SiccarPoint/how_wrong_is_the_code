@@ -239,7 +239,7 @@ def is_commit_bug(message_headline, message):
     """
     Check if the commit appears to be a bug based on the commit text and the
     keywords: bug, mend, broken, forgot, work(s) right/correctly, deal(s) with,
-    typo, wrong
+    typo, wrong, fix(es)
     (established from reviewing project commit logs)
 
     Note that this won't be able to pick bugs folded in with PRs (...yet)
@@ -276,10 +276,11 @@ def is_commit_bug(message_headline, message):
     dealwith = r'(^|\W)[Dd]eals? with($|\W)'
     typo = r'(^|\W)[Tt]ypo($|\W)'
     wrong = r'(^|\W)[Ww]rong($|\W)'
+    fix = r'(^|\W)[Ff]ixe?s?($|\W)'
     allposs = (
         bug1 + '|' + bug2 + '|' + bug3 + '|' + mend + '|' + broken + '|'
         + forgot + '|' + worksright + '|' + workscorrectly + '|'
-        + dealwith + '|' + typo + '|' + wrong
+        + dealwith + '|' + typo + '|' + wrong + '|' + fix
     )
     found = False
     for mess in (message_headline, message):
