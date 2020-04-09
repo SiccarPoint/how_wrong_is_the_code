@@ -355,7 +355,7 @@ def plot_commit_and_bug_rates(from_start_time, bug_from_start_time,
 
     figure('cumulative bugs')
     plot(bug_from_start_time + [0, ],
-         list(range(len(bug_from_start_time), -1, -1)), fmt)
+         list(range(len(bug_from_start_time), -1, -1)), fmt + 'x-')
     xlabel('Time (days)')
     ylabel('Total bugs')
 
@@ -372,24 +372,25 @@ def plot_commit_and_bug_rates(from_start_time, bug_from_start_time,
     commit_rates, commit_rate_median, commit_rate_mean = calc_event_rate(
         from_start_time
     )
-    plot(sorted(commit_rates), fmt + '-')
+    #plot(sorted(commit_rates), fmt + '-')
 
     figure('bug rate')
     bug_rates, bug_rate_median, bug_rate_mean = calc_event_rate(
         bug_from_start_time
     )
-    plot(sorted(bug_rates), fmt + '-')
+    # plot(sorted(bug_rates), fmt + 'x-')
     return commit_rate_median, commit_rate_mean, bug_rate_median, bug_rate_mean
 
 
 if __name__ == "__main__":
     pages = 10
-    topic = 'chemistry'  # 'landlab', 'terrainbento', 'physics', 'chemistry', 'doi.org'
+    topic = 'landlab'  # 'landlab', 'terrainbento', 'physics', 'chemistry', 'doi.org'
     # the search for Landlab isn't pulling landlab/landlab as a long repo!? Check
     print('Searching on ' + topic)
     bug_find_rate = []  # i.e., per bugs per commit
     total_authors = []
     total_commits_per_repo = []
+    total_bugs_per_repo = []
     commit_rate_median_per_repo = []
     commit_rate_mean_per_repo = []
     bug_rate_median_per_repo = []
@@ -414,7 +415,11 @@ if __name__ == "__main__":
                 commits)
 
             total_authors.append(len(authors))
+            # note this may separate out same author with different IDs, e.g,
+            # Katherine Barnhart vs Katy Barnhart vs kbarnhart
+            # Not much we can do about this; hope it comes out in the wash
             total_commits_per_repo.append(total_commits)
+            total_bugs_per_repo.append(len(times_bugs_fixed))
             try:
                 bug_find_rate.append(len(times_bugs_fixed) / len(dtimes))
             except ZeroDivisionError:
@@ -473,6 +478,7 @@ if __name__ == "__main__":
         )
         total_authors.append(len(authors))
         total_commits_per_repo.append(len(commits))
+        total_bugs_per_repo.append(len(times_bugs_fixed))
         try:
             bug_find_rate.append(len(times_bugs_fixed) / len(dtimes))
         except ZeroDivisionError:
@@ -483,7 +489,7 @@ if __name__ == "__main__":
         except TypeError:  # no commits present
             continue
         if 'coveralls' in badges:
-            coveralls_count.append([enum_long + enum, owner, name])
+            coveralls_count.append([enum_long + short_repos, owner, name])
             emph = True
         else:
             emph = False
@@ -512,11 +518,14 @@ if __name__ == "__main__":
         for ln in coveralls_count:
             print(ln)
 
-    figure('Bug find rate, by project, ascending order')
+    cov_indices = [cov[0] for cov in coveralls_count]
+    figure('Bug find fraction, by project, ascending order')
     plot(sorted(bug_find_rate))
     ylabel('Fraction of all commits finding bugs')
-    figure('Total committers vs bug find rate')
+    figure('Total committers vs bug fraction rate')
     plot(total_authors, bug_find_rate, 'x')
+    plot(np.array(total_authors)[cov_indices],
+         np.array(bug_find_rate)[cov_indices], 'kx')
     xlabel('Number of authors committing to code')
     ylabel('Fraction of all commits finding bugs')
 
@@ -534,5 +543,14 @@ if __name__ == "__main__":
     figure('commits vs authors')
     plot(total_authors, total_commits_per_repo, 'x')
     plot(author_numbers, median_author_num_commits, 'o')
+    plot(np.array(total_authors)[cov_indices],
+         np.array(total_commits_per_repo)[cov_indices], kx)
     xlabel('Number of authors committing to code')
     ylabel('Total number of commits')
+
+    figure('bugs vs authors')
+    plot(total_authors, total_bugs_per_repo, 'x')
+    plot(np.array(total_authors)[cov_indices],
+         np.array(total_bugs_per_repo)[cov_indices], kx)
+    xlabel('Number of authors committing to code')
+    ylabel('Total number of bugs')
