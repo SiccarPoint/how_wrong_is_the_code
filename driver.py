@@ -582,3 +582,10 @@ if __name__ == "__main__":
          np.array(bug_find_rate)[cov_indices], 'kx')
     xlabel('Number of authors committing to code')
     ylabel('Fraction of all commits finding bugs')
+
+    figure('Total commits vs bug fraction rate')
+    plot(total_commits_per_repo, bug_find_rate, 'x')
+    plot(np.array(total_commits_per_repo)[cov_indices],
+         np.array(bug_find_rate)[cov_indices], 'kx')
+    xlabel('Total number of commits')
+    ylabel('Fraction of all commits finding bugs')
