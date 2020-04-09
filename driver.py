@@ -577,12 +577,23 @@ if __name__ == "__main__":
     xlabel('Number of authors committing to code')
     ylabel('Total number of bugs')
 
-    figure('Bug find fraction, by project, ascending order')
-    plot(sorted(bug_find_rate))
-    ylabel('Fraction of all commits finding bugs')
+    # figure('Bug find fraction, by project, ascending order')
+    # plot(sorted(bug_find_rate))
+    # ylabel('Fraction of all commits finding bugs')
+
+    # now as more like an actual CDF
+    figure('bug find fraction as CDF')
+    bug_commit_fraction_in_order = np.array(sorted(bug_find_rate))
+    CDF_count = np.arange(bug_commit_fraction_in_order.size, dtype=float)
+    CDF_count /= CDF_count.max()
+    plot(bug_commit_fraction_in_order, CDF_count)
+    ylabel('Cumulative probability density')
+    xlabel('Fraction of all commits finding bugs')
 
     figure('Bug find fraction, histogram')
     hist(bug_find_rate, bins='auto')
+    hist(np.array(bug_find_rate)[np.array(bug_find_rate) > 0], bins='auto',
+         alpha=0.5)
     xlabel('Fraction of all commits finding bugs')
 
     figure('Total committers vs bug fraction rate')
