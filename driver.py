@@ -440,8 +440,8 @@ if __name__ == "__main__":
             # note this may separate out same author with different IDs, e.g,
             # Katherine Barnhart vs Katy Barnhart vs kbarnhart
             # Not much we can do about this; hope it comes out in the wash
-            total_commits_per_repo.append(total_commits)
             total_bugs_per_repo.append(len(times_bugs_fixed))
+            total_commits_per_repo.append(total_commits)
             try:
                 bug_find_rate.append(len(times_bugs_fixed) / len(dtimes))
             except ZeroDivisionError:
@@ -503,6 +503,7 @@ if __name__ == "__main__":
         total_authors.append(len(authors))
         total_commits_per_repo.append(len(commits))
         total_bugs_per_repo.append(len(times_bugs_fixed))
+        total_commits_from_API.append(total_commits)
         try:
             bug_find_rate.append(len(times_bugs_fixed) / len(dtimes))
         except ZeroDivisionError:
