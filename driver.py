@@ -2,7 +2,7 @@
 
 import requests, json, re
 import numpy as np
-from matplotlib.pyplot import plot, figure, show, xlabel, ylabel, xlim, ylim, bar
+from matplotlib.pyplot import plot, figure, show, xlabel, ylabel, xlim, ylim, bar, hist
 from datetime import datetime
 from header.header import HEADER
 from requests.auth import HTTPDigestAuth
@@ -580,6 +580,10 @@ if __name__ == "__main__":
     figure('Bug find fraction, by project, ascending order')
     plot(sorted(bug_find_rate))
     ylabel('Fraction of all commits finding bugs')
+
+    figure('Bug find fraction, histogram')
+    hist(bug_find_rate, bins='auto')
+    xlabel('Fraction of all commits finding bugs')
 
     figure('Total committers vs bug fraction rate')
     plot(total_authors, bug_find_rate, 'x')
