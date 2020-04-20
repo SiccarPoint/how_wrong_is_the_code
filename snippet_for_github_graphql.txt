@@ -1,0 +1,36 @@
+# Type queries into this side of the screen, and you will
+# see intelligent typeaheads aware of the current GraphQL type schema,
+# live syntax, and validation errors highlighted within the text.
+
+# We'll get you started with a simple query showing your username!
+{
+  repository(name: "sickvim", owner: "jonathansick") {
+    ref(qualifiedName: "master") {
+      target {
+        ... on Commit {
+          id
+          additions
+          history(first: 5) {
+            pageInfo {
+              hasNextPage
+            }
+            edges {
+              node {
+                messageHeadline
+                oid
+                message
+                additions
+                deletions
+                author {
+                  name
+                  email
+                  date
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
