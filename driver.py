@@ -7,6 +7,16 @@ from datetime import datetime
 from header.header import HEADER
 from requests.auth import HTTPDigestAuth
 
+COUNT_ADDITIONS = False
+# This is a hardwired trigger as doing this makes it very likely we hit the
+# API query limiters, requiring a painful decrease in performance &
+# unpredictable crashes can occur
+if COUNT_ADDITIONS:
+    history_page = 50
+else:
+    history_page = 100
+
+
 q = '''query($first: Int!, $query: String!, $repo_after: String, $commits_after: String){
   search(first: $first, type: REPOSITORY, query: $query, after: $repo_after) {
     edges {
@@ -33,25 +43,25 @@ q = '''query($first: Int!, $query: String!, $repo_after: String, $commits_after:
           ref(qualifiedName: "master") {
             target {
               ... on Commit {
- #               id
-                additions
-                deletions
-                history(first: 100, after: $commits_after) {
+                history(first: '''
+q += str(history_page)
+q += ''', after: $commits_after) {
                   totalCount
                   pageInfo {
                     hasNextPage
                     commitsEndCursor: endCursor
                   }
                   edges {
-                    node {
-                      author {
+                    node {\n'''
+if COUNT_ADDITIONS:
+    q += '                      additions\n'
+q += '''                      author {
                         name
 #                        email
 #                        date
                       }
                       pushedDate
                       messageHeadline
-#                      oid
                       message
                     }
                   }
@@ -81,8 +91,6 @@ query ($name: String!, $owner: String!, $commits_after: String) {
   repository(name: $name, owner: $owner) {
     object(expression: "master") {
       ...on Commit {
-        additions
-        deletions
         history(first: 100, after: $commits_after) {
           totalCount
           pageInfo {
@@ -91,6 +99,12 @@ query ($name: String!, $owner: String!, $commits_after: String) {
           }
           edges {
             node {
+'''
+if COUNT_ADDITIONS:
+    q_single_repo += '''
+              additions
+'''
+q_single_repo += '''
               author {
                 name
                 email
@@ -98,13 +112,18 @@ query ($name: String!, $owner: String!, $commits_after: String) {
               }
               pushedDate
               messageHeadline
-              oid
               message
             }
           }
         }
       }
     }
+  }
+  rateLimit {
+    limit
+    cost
+    remaining
+    resetAt
   }
 }
 '''
@@ -159,6 +178,11 @@ def get_commits_single_repo(name, owner, headers, max_iters=10):
         commits_after = commit_info['pageInfo']['commitsEndCursor']
         all_commits += commit_info['edges']
         itercount += 1
+    # once this is done, print where we are in the API costings:
+    print("Query cost:", r.json()['data']['rateLimit']['cost'])
+    print("Query limit remaining:",
+          r.json()['data']['rateLimit']['remaining'])
+    print("Reset at:", r.json()['data']['rateLimit']['resetAt'])
     return all_commits
 
 
@@ -176,7 +200,8 @@ def process_aquired_data(aquired_repos):
             total_commits = rep_data['ref']['target']['history']['totalCount']
             readme_text = rep_data['object']['text']
             has_next_page = commit_page_data['pageInfo']['hasNextPage']
-            commits = commit_page_data['edges']  # this is the list of <=100 commits
+            commits = commit_page_data['edges']
+            # ^^this is the list of <=long_repo commits
             dt_start = convert_datetime(creation_date)
             dt_last_push = convert_datetime(last_push_date)
             languages = set(lang['name'] for lang in languages_list)
@@ -225,18 +250,23 @@ def first_commit_dtime(commits, is_next_page, override_next_page=False):
 def yield_commits_data(commits):
     """
     Takes a list of dicts that is "commits", and yields
-    (author_name, pushed_datetime, message_headline, message)
+    (author_name, pushed_datetime, message_headline, message, additions)
     """
     for c in commits:
         data = c['node']
         author_name = data['author']['name']
+        if COUNT_ADDITIONS:
+            additions = data['additions']
+        else:
+            additions = None
         try:
             pushed_datetime = convert_datetime(data['pushedDate'])
         except TypeError:
             continue
         message_headline = data['messageHeadline']
         message = data['message']
-        yield author_name, pushed_datetime, message_headline, message
+        yield (author_name, pushed_datetime, message_headline, message,
+               additions)
 
 
 def is_commit_bug(message_headline, message):
@@ -313,8 +343,9 @@ def build_commit_and_bug_timelines(commits):
     last_dtime = None
     last_bug_fix = None
     authors = set()
+    additions = []
     # firsttime = first_commit_dtime(commits, False, override_next_page=True)
-    for auth, dtime, head, mess in yield_commits_data(commits):
+    for auth, dtime, head, mess, adds in yield_commits_data(commits):
         authors.add(auth)
         isbug = is_commit_bug(head, mess)
         # print(isbug)
@@ -323,7 +354,9 @@ def build_commit_and_bug_timelines(commits):
             if isbug:
                 times_bugs_fixed.append(dtime)
             last_dtime = dtime
-    return times_bugs_fixed, dtimes, authors
+            if COUNT_ADDITIONS:
+                additions.append(adds)
+    return times_bugs_fixed, dtimes, authors, additions
 
 
 def build_times_from_first_commit(times_bugs_fixed, dtimes):
@@ -357,7 +390,8 @@ def calc_event_rate(times_of_events):
 
 
 def plot_commit_and_bug_rates(from_start_time, bug_from_start_time,
-                              number_of_authors, highlight=False):
+                              number_of_authors, additions,
+                              highlight=False):
 
     if highlight:
         fmt = 'k'
@@ -386,7 +420,17 @@ def plot_commit_and_bug_rates(from_start_time, bug_from_start_time,
     xlabel('Cumulative number of commits')
     ylabel('Cumulative number of bugs')
 
-
+    if COUNT_ADDITIONS:
+        figure('cumulative bugs vs cumulative code line additions')
+        # note this ONLY assesses additions, as fresh code is more likely to
+        # introduce new bugs than modified code
+        cumulative_lines = np.cumsum(additions[::-1])
+        plot(cumulative_lines[num_commits_at_each_bug],
+             list(range(len(num_commits_at_each_bug))))
+        xlabel('Cumulative number of added lines')
+        ylabel('Cumulative number of bugs')
+        # note this creates POORLY linear, very steppy plots, notably much
+        # worse than the bugs vs commits plot
 
     # more people means more commits, and broadly linearly, so
     figure('commits per user')
@@ -418,10 +462,18 @@ def moving_average(a, n=10) :
 
 
 if __name__ == "__main__":
-    pages = 2  # 10
-    max_iters_for_commits = 10
+    pages = 20  # 20
+    max_iters_for_commits = 50
     topic = 'physics'  # 'landlab', 'terrainbento', 'physics', 'chemistry', 'doi.org'
     # the search for Landlab isn't pulling landlab/landlab as a long repo!? Check
+    if COUNT_ADDITIONS:
+        # not yet quite stable
+        get_data_limit = 10
+        long_repo = 50
+    else:
+        get_data_limit = 20
+        long_repo = 100
+
     print('Searching on ' + topic)
     bug_find_rate = []  # i.e., per bugs per commit
     total_authors = []
@@ -435,20 +487,21 @@ if __name__ == "__main__":
     total_commits_from_API = []
     cursor = None  # leave this alone
     for i in range(pages):
-        data, next_page, new_cursor = get_data(20, topic, cursor, HEADER)
+        data, next_page, new_cursor = get_data(get_data_limit, topic, cursor,
+                                               HEADER)
         for enum, (
                 rep_data, nameowner, name, owner, creation_date,
                 last_push_date, commit_page_data, has_next_page,
                 commits, total_commits, languages, readme_text
                 ) in enumerate(process_aquired_data(data)):
             badges = look_for_badges(readme_text)
-            if total_commits > 100:
+            if total_commits > long_repo:
                 long_repos.append([total_commits, name, owner,
                                    languages, badges, total_commits])
                 continue
 
-            times_bugs_fixed, dtimes, authors = build_commit_and_bug_timelines(
-                commits)
+            times_bugs_fixed, dtimes, authors, additions = \
+                build_commit_and_bug_timelines(commits)
 
             total_authors.append(len(authors))
             # note this may separate out same author with different IDs, e.g,
@@ -474,7 +527,8 @@ if __name__ == "__main__":
                 emph = False
             (commit_rate_median, commit_rate_mean,
              bug_rate_median, bug_rate_mean) = plot_commit_and_bug_rates(
-                from_start_time, bug_from_start_time, len(authors), emph
+                from_start_time, bug_from_start_time, len(authors),
+                additions, emph
             )
             commit_rate_median_per_repo.append(commit_rate_median)
             commit_rate_mean_per_repo.append(commit_rate_mean)
@@ -511,9 +565,8 @@ if __name__ == "__main__":
         commits = get_commits_single_repo(name, owner, HEADER,
                                           max_iters=max_iters_for_commits)
         print('Successfully loaded ' + str(len(commits)) + ' commits')
-        times_bugs_fixed, dtimes, authors = build_commit_and_bug_timelines(
-            commits
-        )
+        times_bugs_fixed, dtimes, authors, additions = \
+            build_commit_and_bug_timelines(commits)
         total_authors.append(len(authors))
         total_bugs_per_repo.append(len(times_bugs_fixed))
         total_commits_from_API.append(total_commits)
@@ -533,7 +586,7 @@ if __name__ == "__main__":
             emph = False
         commit_rate_median, commit_rate_mean, bug_rate_median, bug_rate_mean = \
             plot_commit_and_bug_rates(from_start_time, bug_from_start_time,
-                                      len(authors), emph)
+                                      len(authors), additions, emph)
         commit_rate_median_per_repo.append(commit_rate_median)
         commit_rate_mean_per_repo.append(commit_rate_mean)
         bug_rate_median_per_repo.append(bug_rate_median)
@@ -550,7 +603,7 @@ if __name__ == "__main__":
     if len(coveralls_count) > 0:
         print(
         "This is a list of all the coveralls repositories, ending with "
-        + "the long repositories > 100 commits, listed as "
+        + "the long repositories > long_repo commits, listed as "
         + "[ID_in_repo_lists, owner, name]:"
         )
         for ln in coveralls_count:
