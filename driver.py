@@ -379,6 +379,15 @@ def plot_commit_and_bug_rates(from_start_time, bug_from_start_time,
     xlabel('Time (days)')
     ylabel('Total bugs')
 
+    figure('cumulative bugs vs cumulative commits')
+    num_commits_at_each_bug = np.searchsorted(from_start_time[::-1],
+                                              [0, ] + bug_from_start_time[::-1])
+    plot(num_commits_at_each_bug, list(range(len(num_commits_at_each_bug))))
+    xlabel('Cumulative number of commits')
+    ylabel('Cumulative number of bugs')
+
+
+
     # more people means more commits, and broadly linearly, so
     figure('commits per user')
     plot(from_start_time,
@@ -409,9 +418,9 @@ def moving_average(a, n=10) :
 
 
 if __name__ == "__main__":
-    pages = 10
+    pages = 2  # 10
     max_iters_for_commits = 10
-    topic = 'chemistry'  # 'landlab', 'terrainbento', 'physics', 'chemistry', 'doi.org'
+    topic = 'physics'  # 'landlab', 'terrainbento', 'physics', 'chemistry', 'doi.org'
     # the search for Landlab isn't pulling landlab/landlab as a long repo!? Check
     print('Searching on ' + topic)
     bug_find_rate = []  # i.e., per bugs per commit
@@ -491,7 +500,8 @@ if __name__ == "__main__":
             print(ln)
 
     print('***')
-    input('Found ' + str(len(long_repos)) + ' long repos. Proceed? [Enter]')
+    print('Found ' + str(len(long_repos)) + ' long repos.')
+    # input('Proceed? [Enter]')
 
     for enum_long, (
                 count, name, owner, languages, badges, total_commits
