@@ -461,6 +461,26 @@ def moving_average(a, n=10) :
     return ret[n - 1:] / n
 
 
+def fit_curvature(x, y, centering):
+    """
+    Fits the equation c0 + c1*x + c2*x**2 to the data y, then calculates the
+    radius of curvature as (1 + (dy/dx)**2)**3/2 / d^2y/dx^2, at x=centering.
+
+    Positive is concave-up, i.e., bug find rate accelerates through time.
+
+    This works, but not well tailored to the application yet.
+    """
+    try:
+        c = np.polyfit(x, y, 2)
+    except np.linalg.LinAlgError:
+        return None
+    dybydx = np.poly1d([2. * c[0], c[1]])
+    d2ybydx2 = np.poly1d([2. * c[0]])
+    dybydx2atpt = dybydx(centering) ** 2
+    numerator = (1 + dybydx2atpt) ** 1.5
+    return numerator / d2ybydx2(centering)
+
+
 if __name__ == "__main__":
     pages = 20  # 20
     max_iters_for_commits = 50
