@@ -461,24 +461,42 @@ def moving_average(a, n=10) :
     return ret[n - 1:] / n
 
 
-def fit_curvature(x, y, centering):
-    """
-    Fits the equation c0 + c1*x + c2*x**2 to the data y, then calculates the
-    radius of curvature as (1 + (dy/dx)**2)**3/2 / d^2y/dx^2, at x=centering.
+# def fit_curvature(x, y, centering):
+#     """
+#     Fits the equation c0 + c1*x + c2*x**2 to the data y, then calculates the
+#     radius of curvature as (1 + (dy/dx)**2)**3/2 / d^2y/dx^2, at x=centering.
+#
+#     Positive is concave-up, i.e., bug find rate accelerates through time.
+#
+#     This works, but not well tailored to the application yet.
+#     """
+#     try:
+#         c = np.polyfit(x, y, 2)
+#     except np.linalg.LinAlgError:
+#         return None
+#     dybydx = np.poly1d([2. * c[0], c[1]])
+#     d2ybydx2 = np.poly1d([2. * c[0]])
+#     dybydx2atpt = dybydx(centering) ** 2
+#     numerator = (1 + dybydx2atpt) ** 1.5
+#     return numerator / d2ybydx2(centering)
 
-    Positive is concave-up, i.e., bug find rate accelerates through time.
 
-    This works, but not well tailored to the application yet.
+def area_from_curve_to_abscissa(abscissa_y, points_on_line_x, points_on_line_y):
     """
-    try:
-        c = np.polyfit(x, y, 2)
-    except np.linalg.LinAlgError:
-        return None
-    dybydx = np.poly1d([2. * c[0], c[1]])
-    d2ybydx2 = np.poly1d([2. * c[0]])
-    dybydx2atpt = dybydx(centering) ** 2
-    numerator = (1 + dybydx2atpt) ** 1.5
-    return numerator / d2ybydx2(centering)
+    Calculates the area between a line defined parallel to x (the abscissa) and
+    points defining the line in (x, y) space. Can be positive (area below the
+    line) or negative (area above the line).
+
+    Assumes points are in x-order, with no bad data.
+    """
+    assert np.all(np.diff(points_on_line_x) >= 0.)  # ordered correctly
+    dists_to_abscissa = points_on_line_y - abscissa_y
+    avg_dist_each_trapezium = (dists_to_abscissa[:-1]
+                               + dists_to_abscissa[1:]) / 2.
+    spacing_each_trapezium = points_on_line_x[1:] - points_on_line_x[:-1]
+    trapezium_areas = avg_dist_each_trapezium * spacing_each_trapezium
+    total_area = np.sum(trapezium_areas)
+    return total_area
 
 
 if __name__ == "__main__":
@@ -701,10 +719,53 @@ if __name__ == "__main__":
     total_commits_IN_order = total_commits_from_API_array[total_commits_order]
     bug_find_rate_ordered = bug_find_rate_array[total_commits_order]
     bug_find_rate_moving_avg = moving_average(bug_find_rate_ordered, n=20)
+    # also a moving average excluding the rate = 0 cases
+    # (=> is it just them causing the trend?)
+    # plotting will show the trend is still there without zeros
+    rate_not_zero = np.logical_not(np.isclose(bug_find_rate_ordered, 0.))
+    bug_find_rate_moving_avg_no_zeros = moving_average(
+        bug_find_rate_ordered[rate_not_zero], n=20
+    )
 
     plot(total_commits_from_API, bug_find_rate, 'x')
     plot(total_commits_IN_order[10:-9], bug_find_rate_moving_avg, '-')
+    plot(total_commits_IN_order[rate_not_zero][10:-9],
+         bug_find_rate_moving_avg_no_zeros, '-')
     plot(total_commits_from_API_array[cov_indices],
-         bug_find_rate_array[cov_indices], 'kx')
+         bug_find_rate_array[cov_indices], 'kx')  # coveralls ones in black
     xlabel('Total number of commits')
     ylabel('Fraction of all commits finding bugs')
+
+    # calculate the total number of bugs missing from the shorter projects
+    # take the final value on the moving avg as the idealised perfect find rate
+    # could revisit this assumption
+    theoretical_find_rate = bug_find_rate_moving_avg[-1]
+    all_missing_bugs = area_from_curve_to_abscissa(
+        theoretical_find_rate, total_commits_IN_order[10:-9],
+        bug_find_rate_moving_avg
+    )
+    assert all_missing_bugs < 0.  # check!
+    all_found_bugs = area_from_curve_to_abscissa(
+        0., total_commits_IN_order[10:-9], bug_find_rate_moving_avg
+    )
+    assert all_found_bugs > 0.
+    bugs_not_found_in_typical_repo = -all_missing_bugs / all_found_bugs
+    print('Bug fraction not found in a typical repo:',
+          bugs_not_found_in_typical_repo)
+    # does changing the centering of the moving avg meaningfully change this?
+    # YES, starting from zero (i.e., [:-19], not [10:-9]) increases the
+    # fraction from ~23% to ~33%.
+
+    all_missing_bugs_no_zeros = area_from_curve_to_abscissa(
+        theoretical_find_rate, total_commits_IN_order[rate_not_zero][10:-9],
+        bug_find_rate_moving_avg_no_zeros
+    )
+    all_found_bugs_no_zeros = area_from_curve_to_abscissa(
+        0., total_commits_IN_order[rate_not_zero][10:-9],
+        bug_find_rate_moving_avg_no_zeros
+    )
+    bugs_not_found_in_typical_repo_no_zeros = (
+        -all_missing_bugs_no_zeros / all_found_bugs_no_zeros
+    )
+    print('Bug fraction not found in a typical repo, discounting zero bug repos:',
+          bugs_not_found_in_typical_repo_no_zeros)
