@@ -1,6 +1,6 @@
 # remember to make an HTTPDigestAuth object!
 
-import requests, json, re
+import requests, json, re, os, pandas, sqlite3
 import numpy as np
 from matplotlib.pyplot import plot, figure, show, xlabel, ylabel, xlim, ylim, bar, hist
 from datetime import datetime
@@ -525,6 +525,19 @@ def spatial_percentile(percentile, points_on_line_x, points_on_line_y):
     return pc_value
 
 
+def cloc_repo(repo_nameowner):
+    assert type(repo_nameowner) is str
+    bashscript = 'git clone --depth 1 https://github.com/'
+    bashscript += repo_nameowner + '.git temp-linecount-repo &&\n'
+    bashscript += 'cloc --sql 1 temp-linecount-repo | sqlite3 repo_cloc.db &&\n'
+    bashscript += 'rm -rf temp-linecount-repo\n'
+    os.system(bashscript)
+    con = sqlite3.connect('repo_cloc.db')
+    out = pandas.read_sql('SELECT * FROM t', con)
+    os.system('rm repo_cloc.db')
+    lines_of_code = out['nCode'].sum()
+    return lines_of_code
+
 
 if __name__ == "__main__":
     pages = 20  # 20
@@ -547,6 +560,7 @@ if __name__ == "__main__":
     commit_rate_mean_per_repo = []
     bug_rate_median_per_repo = []
     bug_rate_mean_per_repo = []
+    all_repos = []  # will store [num_commits, nameowner]
     long_repos = []  # will store [num_commits, name, owner]
     coveralls_count = []
     total_commits_from_API = []
@@ -560,6 +574,7 @@ if __name__ == "__main__":
                 commits, total_commits, languages, readme_text
                 ) in enumerate(process_aquired_data(data)):
             badges = look_for_badges(readme_text)
+            all_repos.append([total_commits, nameowner])
             if total_commits > long_repo:
                 long_repos.append([total_commits, name, owner,
                                    languages, badges, total_commits])
@@ -877,3 +892,7 @@ if __name__ == "__main__":
 
     # We can use cloc (brew install cloc) to count lines of code, per
     # https://stackoverflow.com/questions/26881441/can-you-get-the-number-of-lines-of-code-from-a-github-repository
+    # See the cloc_repo func above
+    # don't run unless you want to wait a bit...
+    # for num_commits, nameowner in all_repos:
+    #     lines_of_code = cloc_repo(nameowner)
