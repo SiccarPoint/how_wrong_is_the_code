@@ -499,6 +499,33 @@ def area_from_curve_to_abscissa(abscissa_y, points_on_line_x, points_on_line_y):
     return total_area
 
 
+def spatial_percentile(percentile, points_on_line_x, points_on_line_y):
+    """
+    Calculate a percentile for a dataset where the data are weighted by their
+    spacing. Percentile specified as a fraction.
+
+    Examples
+    --------
+
+    """
+    assert 0. <= percentile <= 1.
+    # First, uniquely associate each value with its spacing. This is just a
+    # trapezium rule approach:
+    spacing_each_trapezium = points_on_line_x[1:] - points_on_line_x[:-1]
+    val_at_each_trapezium = (points_on_line_y[:-1] + points_on_line_y[1:]) / 2.
+    area_each_trapezium = spacing_each_trapezium * val_at_each_trapezium
+    # order the data by y:
+    order_for_vals = np.argsort(val_at_each_trapezium)
+    accumulating_areas = np.cumsum(area_each_trapezium[order_for_vals])
+    total_area = accumulating_areas[-1]
+    # find the percentile in the accumulating areas:
+    pc_position = np.searchsorted(accumulating_areas,
+                                      percentile * total_area)
+    pc_value = val_at_each_trapezium[order_for_vals][pc_position]
+    return pc_value
+
+
+
 if __name__ == "__main__":
     pages = 20  # 20
     max_iters_for_commits = 50
@@ -728,8 +755,8 @@ if __name__ == "__main__":
     )
 
     plot(total_commits_from_API, bug_find_rate, 'x')
-    plot(total_commits_IN_order[10:-9], bug_find_rate_moving_avg, '-')
-    plot(total_commits_IN_order[rate_not_zero][10:-9],
+    plot(total_commits_IN_order[:-19], bug_find_rate_moving_avg, '-')
+    plot(total_commits_IN_order[rate_not_zero][:-19],
          bug_find_rate_moving_avg_no_zeros, '-')
     plot(total_commits_from_API_array[cov_indices],
          bug_find_rate_array[cov_indices], 'kx')  # coveralls ones in black
@@ -741,20 +768,22 @@ if __name__ == "__main__":
     # could revisit this assumption
     theoretical_find_rate = bug_find_rate_moving_avg[-1]
     all_missing_bugs = area_from_curve_to_abscissa(
-        theoretical_find_rate, total_commits_IN_order[10:-9],
+        theoretical_find_rate, total_commits_IN_order[:-19],
         bug_find_rate_moving_avg
     )
     assert all_missing_bugs < 0.  # check!
     all_found_bugs = area_from_curve_to_abscissa(
-        0., total_commits_IN_order[10:-9], bug_find_rate_moving_avg
+        0., total_commits_IN_order[:-19], bug_find_rate_moving_avg
     )
     assert all_found_bugs > 0.
     bugs_not_found_in_typical_repo = -all_missing_bugs / all_found_bugs
-    print('Bug fraction not found in a typical repo:',
-          bugs_not_found_in_typical_repo)
+    # print('Bug fraction not found in a typical repo:',
+    #       bugs_not_found_in_typical_repo)
     # does changing the centering of the moving avg meaningfully change this?
     # YES, starting from zero (i.e., [:-19], not [10:-9]) increases the
     # fraction from ~23% to ~33%.
+    # Which should we prefer? If offset, maybe we are missing the left hand
+    # rectangle in our trapezium rule?2
 
     all_missing_bugs_no_zeros = area_from_curve_to_abscissa(
         theoretical_find_rate, total_commits_IN_order[rate_not_zero][10:-9],
@@ -769,3 +798,82 @@ if __name__ == "__main__":
     )
     print('Bug fraction not found in a typical repo, discounting zero bug repos:',
           bugs_not_found_in_typical_repo_no_zeros)
+
+    # We could picture this as a mixing line, between two idealised end members:
+    # one where we have mature code that finds bugs at the idealised 20% rate,
+    # and a completely immature one, where tons of bugs could be present but
+    # none are found. If we do this, then these fractions ARE the fractions of
+    # those two end members (i.e., 33% immature, 67% mature - note this is
+    # pleasingly close to the fraction of repos that find no bugs at all,
+    # despite not making this assumption).
+    # This number is VERY sensitive to the final steady state bug find rate;
+    # dropping it from 0.2 to 0.175 more or less halves the typical bug rate
+    # to 16% from 33%.
+    # This could be addressed semi-formally by truncating the final ?30 pts
+    # off the data set, doing the differencing only before that, using the
+    # distribution in the 30 to get a standard error on the mean, then using the
+    # bounds to assess the possible range.
+    # (This should probably be a moving mean, not median!)
+    # Getting the median fraction might be more meaningful - but needs careful
+    # thinking about how to get this out stably, i.e., not just the halfway
+    # point, which will suffer lots of noise.
+    # In reality though, we don't want an end member, because codes may be
+    # added to github in a variety of states of maturity. This probably doesn't
+    # affect the fraction of bugs missed in typical code though, as we can
+    # broadly equate the full set of code that gets to github with the
+    # condition of the legacy code base. i.e., we're effectively sampling the
+    # same thing.
+
+    median_bug_find_rate_using_moving_avg = spatial_percentile(
+        0.5, total_commits_IN_order[:-19], bug_find_rate_moving_avg
+    )
+    # so the ratio becomes...
+    median_bugs_not_found_in_typical_repo = (
+        theoretical_find_rate - median_bug_find_rate_using_moving_avg
+    ) / median_bug_find_rate_using_moving_avg
+    # ...which is 0.26 with tfr=0.20 and 0.097 with tfr=0.175
+
+    # So let's constrain tfr as we said above:
+    last_set_of_bug_find_rates = bug_find_rate_ordered[-20:]
+    theoretical_find_rate_mean = np.mean(last_set_of_bug_find_rates)
+    theoretical_find_rate_std = np.std(last_set_of_bug_find_rates)
+    theoretical_find_rate_95_pciles = (
+        1.96 * theoretical_find_rate_std / np.sqrt(20)
+    )
+    # i.e., mean find rate is
+    min_mean_max_tfrs = (
+        theoretical_find_rate_mean - theoretical_find_rate_95_pciles,
+        theoretical_find_rate_mean,
+        theoretical_find_rate_mean + theoretical_find_rate_95_pciles
+    )
+    min_mean_max_bugs_not_found_in_typical_repo = []
+    for tfr in min_mean_max_tfrs:
+        all_missing_bugs = area_from_curve_to_abscissa(
+            tfr, total_commits_IN_order[:-19],
+            bug_find_rate_moving_avg
+        )
+        bugs_not_found_in_typical_repo = -all_missing_bugs / all_found_bugs
+        min_mean_max_bugs_not_found_in_typical_repo.append(
+            bugs_not_found_in_typical_repo
+        )
+    # this produces mean fractions 0.33, down to 0.12 (min) and up to 0.55 (max)
+    # We can do the same thing with the median, since 2sigma should bracket 95%
+    # of the data:
+    min_median_max_bugs_not_found_in_typical_repo = []
+    for pc in (0.025, 0.5, 0.975):
+        pc_bugs_not_found_in_typical_repo = spatial_percentile(
+            pc, total_commits_IN_order[:-19], bug_find_rate_moving_avg
+        )
+        min_median_max_bug_fraction_in_typical_repo.append(
+            pc_bugs_not_found_in_typical_repo
+        )
+    # (Do we need to do this, or can we just get medians from the avg val
+    # uncertainty?)
+
+    # So, ~0.33 of the bugs remain in a typical script... The logic so far
+    # says that tfr is the bug rate per change found in well-run code, i.e.,
+    # 20%. So if we know the mean length of a commit, we can estimate the
+    # number of bugs per line.
+
+    # We can use cloc (brew install cloc) to count lines of code, per
+    # https://stackoverflow.com/questions/26881441/can-you-get-the-number-of-lines-of-code-from-a-github-repository
