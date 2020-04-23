@@ -269,40 +269,62 @@ def yield_commits_data(commits):
                additions)
 
 
-def is_commit_bug(message_headline, message):
+def is_commit_bug(search_type, message_headline, message):
     """
     Check if the commit appears to be a bug based on the commit text and the
-    keywords: bug, mend, broken, forgot, work(s) right/correctly, deal(s) with,
-    typo, wrong, fix(es)
+    keywords: bug, mend, & variants; broken; forgot; work(s) right/correctly;
+    deal(s) with; typo; wrong; fix(es).
     (established from reviewing project commit logs)
 
-    Note that this won't be able to pick bugs folded in with PRs (...yet)
+    Note that this won't be able to pick bugs folded in with PRs.
+
+    Parameters
+    ----------
+    search_type : {'loose', 'tight', 'major'}
+        If loose, searches for the full spectrum of terms that probably flag
+        a bug. If tight, seaches strictly for "bug" & variants. If major,
+        searches for "major bug", "severe bug", "significant bug".
+    message_headline : str
+        The topic of a commit.
+    message : str
+        The body of a commit.
 
     Examples
     --------
     >>> message = 'nope'
     >>> header = 'noooooooope'
-    >>> is_commit_bug(header, message)
+    >>> is_commit_bug('loose', header, message)
     False
-    >>> message1 = 'is this a bug?'
-    >>> message2 = 'Broken'
-    >>> header1 = 'this mends #501'  # note this fails
+    >>> message1 = 'mending the code'
+    >>> message2 = 'Changing the code'  # this fails
+    >>> message3 = 'Major bug'
+    >>> header1 = 'Commit'  # this fails
     >>> header2 = 'Bugs all over the place'
-    >>> is_commit_bug(message1, header)
+    >>> is_commit_bug('loose', message1, header1)
     True
-    >>> is_commit_bug(message2, header)
-    True
-    >>> is_commit_bug(message, header1)
+    >>> is_commit_bug('tight', message1, header1)
     False
-    >>> is_commit_bug(message1, header2)
+    >>> is_commit_bug('loose', message2, header1)
+    False
+    >>> is_commit_bug('tight', message2, header1)
+    False
+    >>> is_commit_bug('loose', message2, header2)
+    True
+    >>> is_commit_bug('tight', message2, header2)
+    True
+    >>> is_commit_bug('loose', message1, header2)
+    True
+    >>> is_commit_bug('major', message1, header2)
+    False
+    >>> is_commit_bug('major', message3, header2)
     True
     """
+    assert search_type in ('loose', 'tight', 'major')
     # regex syntax reminder: ^ start of line, $ end of line, \W not word char
     # s? s zero or one time
-    bug1 = r'(^|\W)[Bb]ug($|\W)'
+    bug1 = r'(^|\W)[Bb]ugs?($|\W)'
     bug2 = r'(^|\W)[Bb]uggy($|\W)'
-    bug3 = r'(^|\W)[Bb]ugs($|\W)'
-    mend = r'(^|\W)[Mm]end($|\W)'
+    mend = r'(^|\W)[Mm]end(ing)?s?($|\W)'
     broken = r'(^|\W)[Bb]roken($|\W)'
     forgot = r'(^|\W)[Ff]orgot($|\W)'
     worksright = r'(^|\W)works? right($|\W)'
@@ -310,15 +332,27 @@ def is_commit_bug(message_headline, message):
     dealwith = r'(^|\W)[Dd]eals? with($|\W)'
     typo = r'(^|\W)[Tt]ypo($|\W)'
     wrong = r'(^|\W)[Ww]rong($|\W)'
-    fix = r'(^|\W)[Ff]ixe?s?($|\W)'
+    fix = r'(^|\W)[Ff]ix(es)?($|\W)'
     allposs = (
-        bug1 + '|' + bug2 + '|' + bug3 + '|' + mend + '|' + broken + '|'
+        bug1 + '|' + bug2 + '|' + mend + '|' + broken + '|'
         + forgot + '|' + worksright + '|' + workscorrectly + '|'
         + dealwith + '|' + typo + '|' + wrong + '|' + fix
     )
+    tight = bug1 + '|' + bug2
+    major = (
+        r'(^|\W)[Mm]ajor bugs?($|\W)|'
+        + r'(^|\W)[Ss]ignificant bugs?($|\W)|'
+        + r'(^|\W)[Ss]evere bugs?($|\W)'
+    )
     found = False
+    if search_type == 'loose':
+        search_terms = allposs
+    elif search_type == 'tight':
+        search_terms = tight
+    elif search_type == 'major':
+        search_terms = major
     for mess in (message_headline, message):
-        found = re.search(allposs, mess) or found
+        found = bool(re.search(search_terms, mess)) or found
     return found
 
 
@@ -337,7 +371,19 @@ def look_for_badges(readme_text):
     return badges
 
 
-def build_commit_and_bug_timelines(commits):
+def build_commit_and_bug_timelines(commits, search_type):
+    """
+    Creates timelines of when commits were made and bugs were found.
+    Also tracks the authors committing to the repo, and if COUNT_ADDITIONS,
+    the number of added lines associated with each commit.
+
+    Parameters
+    ----------
+    commits : list of dicts
+        the dicts output from the graphql searches on Github.
+    search_type : ('loose', 'tight', 'major')
+        Search constraints for bug terms (see is_commit_bug)
+    """
     dtimes = []
     times_bugs_fixed = []
     last_dtime = None
@@ -347,7 +393,7 @@ def build_commit_and_bug_timelines(commits):
     # firsttime = first_commit_dtime(commits, False, override_next_page=True)
     for auth, dtime, head, mess, adds in yield_commits_data(commits):
         authors.add(auth)
-        isbug = is_commit_bug(head, mess)
+        isbug = is_commit_bug(search_type, head, mess)
         # print(isbug)
         if dtime is not None:
             dtimes.append(dtime)
@@ -544,6 +590,7 @@ if __name__ == "__main__":
     max_iters_for_commits = 50
     topic = 'physics'  # 'landlab', 'terrainbento', 'physics', 'chemistry', 'doi.org'
     # the search for Landlab isn't pulling landlab/landlab as a long repo!? Check
+    search_type = 'loose'  # for how to pick bugs ('loose', 'tight', 'major')
     if COUNT_ADDITIONS:
         # not yet quite stable
         get_data_limit = 10
@@ -581,7 +628,7 @@ if __name__ == "__main__":
                 continue
 
             times_bugs_fixed, dtimes, authors, additions = \
-                build_commit_and_bug_timelines(commits)
+                build_commit_and_bug_timelines(commits, search_type)
 
             total_authors.append(len(authors))
             # note this may separate out same author with different IDs, e.g,
@@ -646,7 +693,7 @@ if __name__ == "__main__":
                                           max_iters=max_iters_for_commits)
         print('Successfully loaded ' + str(len(commits)) + ' commits')
         times_bugs_fixed, dtimes, authors, additions = \
-            build_commit_and_bug_timelines(commits)
+            build_commit_and_bug_timelines(commits, search_type)
         total_authors.append(len(authors))
         total_bugs_per_repo.append(len(times_bugs_fixed))
         total_commits_from_API.append(total_commits)
