@@ -587,10 +587,10 @@ def cloc_repo(repo_nameowner):
 
 if __name__ == "__main__":
     pages = 20  # 20
-    max_iters_for_commits = 50
-    topic = 'physics'  # 'landlab', 'terrainbento', 'physics', 'chemistry', 'doi.org'
+    max_iters_for_commits = 15  # 50 gives 5000
+    topic = 'chemistry'  # 'landlab', 'terrainbento', 'physics', 'chemistry', 'doi.org'
     # the search for Landlab isn't pulling landlab/landlab as a long repo!? Check
-    search_type = 'loose'  # for how to pick bugs ('loose', 'tight', 'major')
+    search_type = 'tight'  # for how to pick bugs ('loose', 'tight', 'major')
     if COUNT_ADDITIONS:
         # not yet quite stable
         get_data_limit = 10
@@ -815,11 +815,18 @@ if __name__ == "__main__":
     bug_find_rate_moving_avg_no_zeros = moving_average(
         bug_find_rate_ordered[rate_not_zero], n=20
     )
+    commits_more_than_1 = total_commits_IN_order > 1
+    bug_find_rate_moving_avg_not1commit = moving_average(
+        bug_find_rate_ordered[commits_more_than_1], n=20
+    )
 
     plot(total_commits_from_API, bug_find_rate, 'x')
     plot(total_commits_IN_order[:-19], bug_find_rate_moving_avg, '-')
     plot(total_commits_IN_order[rate_not_zero][:-19],
          bug_find_rate_moving_avg_no_zeros, '-')
+    plot(total_commits_IN_order[commits_more_than_1][:-19],
+         bug_find_rate_moving_avg_not1commit, '-')
+    # ^^...this makes no difference really, as it only changes one point
     plot(total_commits_from_API_array[cov_indices],
          bug_find_rate_array[cov_indices], 'kx')  # coveralls ones in black
     xlabel('Total number of commits')
@@ -921,7 +928,7 @@ if __name__ == "__main__":
     # this produces mean fractions 0.33, down to 0.12 (min) and up to 0.55 (max)
     # We can do the same thing with the median, since 2sigma should bracket 95%
     # of the data:
-    min_median_max_bugs_not_found_in_typical_repo = []
+    min_median_max_bug_fraction_in_typical_repo = []
     for pc in (0.025, 0.5, 0.975):
         pc_bugs_not_found_in_typical_repo = spatial_percentile(
             pc, total_commits_IN_order[:-19], bug_find_rate_moving_avg
@@ -943,3 +950,19 @@ if __name__ == "__main__":
     # don't run unless you want to wait a bit...
     # for num_commits, nameowner in all_repos:
     #     lines_of_code = cloc_repo(nameowner)
+
+    # If we look only for major bugs, we find only two in the whole of the
+    # 200 repos for physics (1500 commits max).
+
+    # What you get with a tight definition of bug is intriguing.
+    # Based on the 20 longest commit sequences, the mean of "steady" bug
+    # finding is 0.045 (0.021-> 0.069). Chemistry is 0.037 (0.23->0.52)
+    # i.e., by the time you add 20 commits, you would expect one bug
+
+    # What is the commit number distribution of the zero bug code?
+    figure('Commits in zero bug repos')
+    zero_bug_repos = np.isclose(bug_find_rate_ordered, 0.)
+    commits_of_zero_bug_repos = total_commits_IN_order[zero_bug_repos]
+    hist(commits_of_zero_bug_repos, bins='auto', range=(0, 1000))
+    xlabel('Number of commits')
+    ylabel('Number of repos')
