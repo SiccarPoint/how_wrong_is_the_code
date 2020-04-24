@@ -956,7 +956,7 @@ if __name__ == "__main__":
 
     # What you get with a tight definition of bug is intriguing.
     # Based on the 20 longest commit sequences, the mean of "steady" bug
-    # finding is 0.045 (0.021-> 0.069). Chemistry is 0.037 (0.23->0.52)
+    # finding is 0.045 (0.021-> 0.069). Chemistry is 0.037 (0.023->0.052)
     # i.e., by the time you add 20 commits, you would expect one bug
 
     # What is the commit number distribution of the zero bug code?
