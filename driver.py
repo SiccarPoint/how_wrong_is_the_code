@@ -281,12 +281,32 @@ def get_process_save_data_all_repos(calls, first, query, cursor, headers,
         json.dump(data_for_repo, outfile)
 
 
-def load_processed_data_all_repos(query, headers):
+def load_processed_data_all_repos(query):
     """
     Loads the output from get_process_save_data_all_repos.
-    """
-    pass
 
+    Parameters
+    ----------
+    query : str
+        The search term(s) used to create the save.
+    """
+    with open(os.path.join(query, 'savedata.json')) as json_file:
+        data_from_repo = json.load(json_file)
+    for nameowner, repo_dict in data_from_repo.items():
+        rep_data = repo_dict['rep_data']
+        name = repo_dict['name']
+        owner = repo_dict['owner']
+        creation_date = repo_dict['creation_date']
+        last_push_date = repo_dict['last_push_date']
+        commit_page_data = repo_dict['commit_page_data']
+        has_next_page = repo_dict['has_next_page']
+        commits = repo_dict['commits']
+        total_commits = repo_dict['total_commits']
+        languages = repo_dict['languages']
+        readme_text = repo_dict['readme_text']
+        yield (rep_data, nameowner, name, owner, creation_date,
+               last_push_date, commit_page_data, has_next_page, commits,
+               total_commits, languages, readme_text)
 
 
 def convert_datetime(datetime_str):
