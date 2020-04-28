@@ -241,6 +241,12 @@ def get_process_save_data_all_repos(calls, first, query, cursor, headers,
     query_fail_repeats : int
         Number of repeat attempts permitted after a failed API call.
     """
+    try:
+        os.mkdir(query)
+    except FileExistsError:
+        raise FileExistsError('A save already exists for this query! '
+                              + 'Delete its directory to create a new one.')
+    data_for_repo = {}
     for i in range(calls):
         get_data_out = get_data(first, query, cursor, headers)
         if len(get_data_out) == 1:
@@ -255,7 +261,24 @@ def get_process_save_data_all_repos(calls, first, query, cursor, headers,
             else:
                 raise TypeError("Query failed repeatedly, aborting")
         aquired_repos, next_page, cursor = get_data_out
-
+        for (rep_data, nameowner, name, owner, creation_date,
+             last_push_date, commit_page_data, has_next_page, commits,
+             total_commits, languages, readme_text)
+             in process_aquired_data(aquired_repos):
+            data_for_repo[nameowner] = {'rep_data': rep_data,
+                                        'name':name,
+                                        'owner':owner,
+                                        'creation_date':creation_date,
+                                        'last_push_date':last_push_date,
+                                        'commit_page_data':commit_page_data,
+                                        'has_next_page': has_next_page,
+                                        'commits': commits,
+                                        'total_commits': total_commits,
+                                        'languages': languages,
+                                        'readme_text': readme_text}
+            # this only contains basic Python types, so saving should be OK
+    with open(os.path.join(query, 'savedata.json'), 'w') as outfile:
+        json.dump(data_for_repo, outfile)
 
 
 def load_processed_data_all_repos(query, headers):
@@ -677,7 +700,7 @@ if __name__ == "__main__":
             all_repos.append([total_commits, nameowner])
             if total_commits > long_repo:
                 long_repos.append([total_commits, name, owner,
-                                   languages, badges, total_commits])
+                                   languages, badges])
                 continue
 
             times_bugs_fixed, dtimes, authors, additions = \
@@ -738,10 +761,10 @@ if __name__ == "__main__":
     # input('Proceed? [Enter]')
 
     for enum_long, (
-                count, name, owner, languages, badges, total_commits
+                total_commits, name, owner, languages, badges
             ) in enumerate(sorted(long_repos)[::-1]):
         print('Reading more commits for ' + owner + '/' + name
-              + ', total commits: ' + str(count))
+              + ', total commits: ' + str(total_commits))
         commits = get_commits_single_repo(name, owner, HEADER,
                                           max_iters=max_iters_for_commits)
         print('Successfully loaded ' + str(len(commits)) + ' commits')
