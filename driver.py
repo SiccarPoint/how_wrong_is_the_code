@@ -148,6 +148,7 @@ def get_data(first, query, cursor, headers):
         aquired_repos = r.json()['data']['search']['edges']
     except TypeError:  # None means issue with form of return
         print(r.json())
+        return cursor  # so we can repeat this call in a different query
     next_page = bool(r.json()['data']['search']['pageInfo']['hasNextPage'])
     cursor = r.json()['data']['search']['pageInfo']['reposEndCursor']
     return aquired_repos, next_page, cursor
@@ -215,6 +216,40 @@ def process_aquired_data(aquired_repos):
         yield (rep_data, nameowner, name, owner, creation_date, last_push_date,
                commit_page_data, has_next_page, commits, total_commits,
                languages, readme_text)
+
+
+def get_process_save_data_all_repos(calls, first, query, cursor, headers,
+                                    query_fail_repeats=3):
+    """
+    Operates get_data and process_aquired_data to produce the data
+    ingested by the other functions, but then saves it rather than outputting
+    it.
+
+    Parameters
+    ----------
+    calls : int
+        Number of times to call the API in total
+    first : int
+        Entries per query to the API (needs tuning to data requested). Total
+        repos queried is then calls * first.
+    query : str
+        The search term to use
+    cursor : str or None
+        Cursor for the starting point of the search (None if the start)
+    headers : str
+        Your Security Key for the Github API (DO NOT SAVE IN THIS SCRIPT)
+    query_fail_repeats : int
+        Number of repeat attempts permitted after a failed API call.
+    """
+    pass
+
+
+def load_processed_data_all_repos(query, headers):
+    """
+    Loads the output from get_process_save_data_all_repos.
+    """
+    pass
+
 
 
 def convert_datetime(datetime_str):
@@ -615,6 +650,7 @@ if __name__ == "__main__":
     for i in range(pages):
         data, next_page, new_cursor = get_data(get_data_limit, topic, cursor,
                                                HEADER)
+        # a ValueError will happen here if the query fails
         for enum, (
                 rep_data, nameowner, name, owner, creation_date,
                 last_push_date, commit_page_data, has_next_page,

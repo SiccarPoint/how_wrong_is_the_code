@@ -129,7 +129,7 @@ class event_stack():
 
 if __name__ == "__main__":
     total_number_of_bugs_to_find = 250
-    bug_lifetime_parameter = 0.0003
+    bug_lifetime_parameter = 0.0001
     # ^dropping this moves us away from a single production line.
     # We drop back from it - but staying parallel - as blp < ~0.01
     # We start to lose parallelism as blp < 0.0005, assoc. w a slow period
