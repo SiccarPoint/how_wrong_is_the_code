@@ -241,7 +241,21 @@ def get_process_save_data_all_repos(calls, first, query, cursor, headers,
     query_fail_repeats : int
         Number of repeat attempts permitted after a failed API call.
     """
-    pass
+    for i in range(calls):
+        get_data_out = get_data(first, query, cursor, headers)
+        if len(get_data_out) == 1:
+            repeat count = 0
+            while repeat_count < query_fail_repeats:
+                get_data_out = get_data(first, query, cursor, headers)
+                if len(get_data_out) == 3:
+                    break
+                else:
+                    assert get_data_out == cursor  # check no advance
+                    # ...and loop continues
+            else:
+                raise TypeError("Query failed repeatedly, aborting")
+        aquired_repos, next_page, cursor = get_data_out
+
 
 
 def load_processed_data_all_repos(query, headers):
@@ -648,9 +662,12 @@ if __name__ == "__main__":
     total_commits_from_API = []
     cursor = None  # leave this alone
     for i in range(pages):
-        data, next_page, new_cursor = get_data(get_data_limit, topic, cursor,
+        get_data_out = get_data(get_data_limit, topic, cursor,
                                                HEADER)
-        # a ValueError will happen here if the query fails
+        if len(get_data_out) == 1:
+            raise TypeError("Query has failed")
+        else:
+            data, next_page, new_cursor = get_data_out
         for enum, (
                 rep_data, nameowner, name, owner, creation_date,
                 last_push_date, commit_page_data, has_next_page,
