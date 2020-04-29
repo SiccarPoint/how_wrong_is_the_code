@@ -154,7 +154,8 @@ def get_data(first, query, cursor, headers):
     return aquired_repos, next_page, cursor
 
 
-def get_commits_single_repo(name, owner, headers, max_iters=10):
+def get_commits_single_repo(name, owner, headers, max_iters=10,
+                            query_fail_repeats=3):
     """Return list of all commits for a single identified repo.
     """
     commits_after = None
@@ -172,7 +173,25 @@ def get_commits_single_repo(name, owner, headers, max_iters=10):
         try:
             commit_info = r.json()['data']['repository']['object']['history']
         except TypeError:  # query failed
-            print(r.json())
+            repeat_count = 0
+            while repeat_count < query_fail_repeats:
+                r = requests.post('https://api.github.com/graphql',
+                                  json = {"query": q_single_repo,
+                                          "variables": {
+                                              "name": name, "owner": owner,
+                                              "commits_after": commits_after
+                                          }},
+                                  headers=headers)
+                try:
+                    commit_info = \
+                        r.json()['data']['repository']['object']['history']
+                except TypeError:
+                    repeat_count += 1
+                    continue
+                else:
+                    break
+            else:
+                raise TypeError("Query failed repeatedly, aborting")
         next_page = bool(
             commit_info['pageInfo']['hasNextPage']
         )
@@ -261,6 +280,7 @@ def get_process_save_data_all_repos(calls, first, query, long_repo_length,
                     break
                 else:
                     assert get_data_out == cursor  # check no advance
+                    repeat_count += 1
                     # ...and loop continues
             else:
                 raise TypeError("Query failed repeatedly, aborting")
