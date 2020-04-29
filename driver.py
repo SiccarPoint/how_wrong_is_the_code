@@ -322,14 +322,18 @@ def get_process_save_commit_data_long_repos(query, headers, max_iters):
         The number of pages of commits to read.
     """
     long_repo_commit_dict = {}
+    repo_count = 0
     for (
         rep_data, nameowner, name, owner, creation_date,
         last_push_date, commit_page_data, has_next_page,
         commits, total_commits, languages, readme_text
     ) in load_processed_data_all_repos(query, 'long'):
+        print('Calling API for', nameowner)
+        print('This is long repo', repo_count)
         commits = get_commits_single_repo(name, owner, headers,
                                           max_iters=max_iters)
         long_repo_commit_dict[nameowner] = commits
+        repo_count += 1
     with open(os.path.join(query, 'savedata_long_commits.json'),
               'w') as outfile:
         json.dump(long_repo_commit_dict, outfile)
@@ -355,6 +359,7 @@ def load_processed_data_all_repos(query, short_or_long_repos):
         raise ValueError("short_or_long_repos must be 'short' or 'long'")
     with open(os.path.join(query, savefile)) as json_file:
         data_from_repo = json.load(json_file)
+    print('Loaded', len(data_from_repo), short_or_long_repos, 'repositories.')
     for nameowner, repo_dict in data_from_repo.items():
         rep_data = repo_dict['rep_data']
         name = repo_dict['name']
@@ -789,6 +794,8 @@ if __name__ == "__main__":
         get_process_save_data_all_repos(
             pages, get_data_limit, topic, long_repo, cursor, HEADER
         )
+        print('Now interrogating long repos. This might be slow...')
+
 
     # now load and proceed:
     for enum, (
