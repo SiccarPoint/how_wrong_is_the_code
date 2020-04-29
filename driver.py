@@ -218,7 +218,8 @@ def process_aquired_data(aquired_repos):
                languages, readme_text)
 
 
-def get_process_save_data_all_repos(calls, first, query, cursor, headers,
+def get_process_save_data_all_repos(calls, first, query, long_repo_length,
+                                    cursor, headers,
                                     query_fail_repeats=3):
     """
     Operates get_data and process_aquired_data to produce the data
@@ -231,7 +232,9 @@ def get_process_save_data_all_repos(calls, first, query, cursor, headers,
         Number of times to call the API in total
     first : int
         Entries per query to the API (needs tuning to data requested). Total
-        repos queried is then calls * first.
+        repos queried is then technically calls * first, but the API often
+        seems to throttle the call, such that less than first entries are
+        returned.
     query : str
         The search term to use
     cursor : str or None
@@ -246,7 +249,8 @@ def get_process_save_data_all_repos(calls, first, query, cursor, headers,
     except FileExistsError:
         raise FileExistsError('A save already exists for this query! '
                               + 'Delete its directory to create a new one.')
-    data_for_repo = {}
+    data_for_repo_short = {}
+    data_for_repo_long = {}
     for i in range(calls):
         get_data_out = get_data(first, query, cursor, headers)
         if len(get_data_out) == 1:
@@ -266,24 +270,42 @@ def get_process_save_data_all_repos(calls, first, query, cursor, headers,
             last_push_date, commit_page_data, has_next_page, commits,
             total_commits, languages, readme_text
         ) in process_aquired_data(aquired_repos):
-            data_for_repo[nameowner] = {'rep_data': rep_data,
-                                        'name':name,
-                                        'owner':owner,
-                                        'creation_date':creation_date,
-                                        'last_push_date':last_push_date,
-                                        'commit_page_data':commit_page_data,
-                                        'has_next_page': has_next_page,
-                                        'commits': commits,
-                                        'total_commits': total_commits,
-                                        'languages': list(languages),
-                                        'readme_text': readme_text}
-            # this only contains basic Python types, so saving should be OK
-    with open(os.path.join(query, 'savedata.json'), 'w') as outfile:
-        json.dump(data_for_repo, outfile)
-    return data_for_repo
+            if total_commits < long_repo_length:
+                data_for_repo_short[nameowner] = {
+                    'rep_data': rep_data,
+                    'name':name,
+                    'owner':owner,
+                    'creation_date':creation_date,
+                    'last_push_date':last_push_date,
+                    'commit_page_data':commit_page_data,
+                    'has_next_page': has_next_page,
+                    'commits': commits,
+                    'total_commits': total_commits,
+                    'languages': list(languages),
+                    'readme_text': readme_text
+                }
+            else:
+                data_for_repo_long[nameowner] = {
+                    'rep_data': rep_data,
+                    'name':name,
+                    'owner':owner,
+                    'creation_date':creation_date,
+                    'last_push_date':last_push_date,
+                    'commit_page_data':commit_page_data,
+                    'has_next_page': has_next_page,
+                    'commits': commits,
+                    'total_commits': total_commits,
+                    'languages': list(languages),
+                    'readme_text': readme_text
+                }
+            # these only contains basic Python types, so saving should be OK
+    with open(os.path.join(query, 'savedata_short.json'), 'w') as outfile:
+        json.dump(data_for_repo_short, outfile)
+    with open(os.path.join(query, 'savedata_long.json'), 'w') as outfile:
+        json.dump(data_for_repo_long, outfile)
 
 
-def load_processed_data_all_repos(query):
+def load_processed_data_all_repos(query, short_or_long_repos):
     """
     Loads the output from get_process_save_data_all_repos.
 
@@ -291,8 +313,17 @@ def load_processed_data_all_repos(query):
     ----------
     query : str
         The search term(s) used to create the save.
+    short_or_long_repos : str in ('short', 'long')
+        Whether to load the dict for the short repos, or the long ones
+        (total_commits >= long_repo).
     """
-    with open(os.path.join(query, 'savedata.json')) as json_file:
+    if short_or_long_repos == 'short':
+        savefile = 'savedata_short.json'
+    elif short_or_long_repos == 'long':
+        savefile = 'savedata_long.json'
+    else:
+        raise ValueError("short_or_long_repos must be 'short' or 'long'")
+    with open(os.path.join(query, savefile)) as json_file:
         data_from_repo = json.load(json_file)
     for nameowner, repo_dict in data_from_repo.items():
         rep_data = repo_dict['rep_data']
