@@ -12,9 +12,9 @@ COUNT_ADDITIONS = True
 # API query limiters, requiring a painful decrease in performance &
 # unpredictable crashes can occur
 if COUNT_ADDITIONS:
-    history_page = 25
+    HISTORY_PAGE = 25
 else:
-    history_page = 100
+    HISTORY_PAGE = 100
 
 
 q = '''query($first: Int!, $query: String!, $repo_after: String, $commits_after: String){
@@ -44,7 +44,7 @@ q = '''query($first: Int!, $query: String!, $repo_after: String, $commits_after:
             target {
               ... on Commit {
                 history(first: '''
-q += str(history_page)
+q += str(HISTORY_PAGE)
 q += ''', after: $commits_after) {
                   totalCount
                   pageInfo {
@@ -780,18 +780,21 @@ if __name__ == "__main__":
     # ^If true, script begins by a fresh call to the API and then a save
     # If false, proceeds with saved data only
     if search_fresh:
-        pages = 20  # 20
-        max_iters_for_commits = 15  # 50 gives 5000
+        approx_desired_repos = 200
+        approx_max_commits = 2000
         if COUNT_ADDITIONS:
             # not yet quite stable
             print('Searching for commit lengths, this might be slow...')
-            pages = 10
-            get_data_limit = 10
+            get_data_limit = 10  # these terms matter for stability
             long_repo = 50
         else:
             get_data_limit = 20
             long_repo = 100
-        cursor = None  # leave this alone
+
+        # leave this section alone:
+        pages = 200 // get_data_limit + 1
+        max_iters_for_commits = approx_max_commits // HISTORY_PAGE
+        cursor = None
 
     print('Searching on ' + topic)
     if search_fresh:
