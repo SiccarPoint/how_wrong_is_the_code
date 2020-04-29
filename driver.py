@@ -1,6 +1,6 @@
 # remember to make an HTTPDigestAuth object!
 
-import requests, json, re, os, pandas, sqlite3
+import requests, json, re, os, pandas, sqlite3, time
 import numpy as np
 from matplotlib.pyplot import plot, figure, show, xlabel, ylabel, xlim, ylim, bar, hist
 from datetime import datetime
@@ -139,12 +139,9 @@ def get_data(first, query, cursor, headers):
                       headers=headers)
     try:
         print("Query cost:", r.json()['data']['rateLimit']['cost'])
-    except (TypeError, KeyError):
-        print(r.json())
-        print("You likely requested too much at once!")
-    print("Query limit remaining:", r.json()['data']['rateLimit']['remaining'])
-    print("Reset at:", r.json()['data']['rateLimit']['resetAt'])
-    try:
+        print("Query limit remaining:",
+              r.json()['data']['rateLimit']['remaining'])
+        print("Reset at:", r.json()['data']['rateLimit']['resetAt'])
         aquired_repos = r.json()['data']['search']['edges']
     except TypeError:  # None means issue with form of return
         print(r.json())
@@ -175,6 +172,7 @@ def get_commits_single_repo(name, owner, headers, max_iters=10,
         except TypeError:  # query failed
             repeat_count = 0
             while repeat_count < query_fail_repeats:
+                time.sleep(10. + 20. * np.random.rand())  # cooldown period
                 r = requests.post('https://api.github.com/graphql',
                                   json = {"query": q_single_repo,
                                           "variables": {
@@ -272,9 +270,10 @@ def get_process_save_data_all_repos(calls, first, query, long_repo_length,
     data_for_repo_long = {}
     for i in range(calls):
         get_data_out = get_data(first, query, cursor, headers)
-        if len(get_data_out) == 1:
+        if len(get_data_out) != 3:
             repeat_count = 0
             while repeat_count < query_fail_repeats:
+                time.sleep(10. + 20. * np.random.rand())  # cooldown period
                 get_data_out = get_data(first, query, cursor, headers)
                 if len(get_data_out) == 3:
                     break
