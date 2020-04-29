@@ -171,7 +171,7 @@ def get_commits_single_repo(name, owner, headers, max_iters=10):
                           headers=headers)
         try:
             commit_info = r.json()['data']['repository']['object']['history']
-        except TypeError:
+        except TypeError:  # query failed
             print(r.json())
         next_page = bool(
             commit_info['pageInfo']['hasNextPage']
@@ -303,6 +303,36 @@ def get_process_save_data_all_repos(calls, first, query, long_repo_length,
         json.dump(data_for_repo_short, outfile)
     with open(os.path.join(query, 'savedata_long.json'), 'w') as outfile:
         json.dump(data_for_repo_long, outfile)
+
+
+def get_process_save_commit_data_long_repos(query, headers, max_iters):
+    """
+    This func uses get_commits_single_repo to interrogate the GitHub API for
+    max_iters pages of commits for the long repositories specified in an
+    existing savefile, created the the search term query. Commit savefile is
+    "query/savedata_long_commits.json".
+
+    Parameters
+    ----------
+    query : str
+        The search term(s) used to create the savefile of long repos
+    headers : str
+        Your GitHub authentification token (DO NOT SAVE IN THIS FILE)
+    max_iters : int
+        The number of pages of commits to read.
+    """
+    long_repo_commit_dict = {}
+    for (
+        rep_data, nameowner, name, owner, creation_date,
+        last_push_date, commit_page_data, has_next_page,
+        commits, total_commits, languages, readme_text
+    ) in load_processed_data_all_repos(query, 'long'):
+        commits = get_commits_single_repo(name, owner, headers,
+                                          max_iters=max_iters)
+        long_repo_commit_dict[nameowner] = commits
+    with open(os.path.join(query, 'savedata_long_commits.json'),
+              'w') as outfile:
+        json.dump(long_repo_commit_dict, outfile)
 
 
 def load_processed_data_all_repos(query, short_or_long_repos):
@@ -711,20 +741,29 @@ def cloc_repo(repo_nameowner):
 
 
 if __name__ == "__main__":
-    pages = 20  # 20
-    max_iters_for_commits = 15  # 50 gives 5000
     topic = 'chemistry'  # 'landlab', 'terrainbento', 'physics', 'chemistry', 'doi.org'
     # the search for Landlab isn't pulling landlab/landlab as a long repo!? Check
     search_type = 'tight'  # for how to pick bugs ('loose', 'tight', 'major')
-    if COUNT_ADDITIONS:
-        # not yet quite stable
-        get_data_limit = 10
-        long_repo = 50
-    else:
-        get_data_limit = 20
-        long_repo = 100
+    search_fresh = False
+    # ^If true, script begins by a fresh call to the API and then a save
+    # If false, proceeds with saved data only
+    if search_fresh:
+        pages = 20  # 20
+        max_iters_for_commits = 15  # 50 gives 5000
+        if COUNT_ADDITIONS:
+            # not yet quite stable
+            get_data_limit = 10
+            long_repo = 50
+        else:
+            get_data_limit = 20
+            long_repo = 100
+        cursor = None  # leave this alone
 
     print('Searching on ' + topic)
+    if search_fresh:
+        print('Calling the GitHub API...')
+    else:
+        print('proceeding with saved data...')
     bug_find_rate = []  # i.e., per bugs per commit
     total_authors = []
     total_bugs_per_repo = []
@@ -732,86 +771,79 @@ if __name__ == "__main__":
     commit_rate_mean_per_repo = []
     bug_rate_median_per_repo = []
     bug_rate_mean_per_repo = []
-    all_repos = []  # will store [num_commits, nameowner]
-    long_repos = []  # will store [num_commits, name, owner]
+    # all_repos = []  # will store [num_commits, nameowner]
+    short_repos = []  # will store [num_commits, nameowner, name, owner]
+    long_repos = []  # will store [num_commits, nameowner, name, owner]
     coveralls_count = []
     total_commits_from_API = []
-    cursor = None  # leave this alone
-    for i in range(pages):
-        get_data_out = get_data(get_data_limit, topic, cursor,
-                                               HEADER)
-        if len(get_data_out) == 1:
-            raise TypeError("Query has failed")
+
+    # do the API call fresh if needed:
+    if search_fresh:
+        get_process_save_data_all_repos(
+            pages, get_data_limit, topic, long_repo, cursor, HEADER
+        )
+
+    # now load and proceed:
+    for enum, (
+        rep_data, nameowner, name, owner, creation_date,
+        last_push_date, commit_page_data, has_next_page,
+        commits, total_commits, languages, readme_text
+    ) in enumerate(load_processed_data_all_repos(topic, 'short')):
+        badges = look_for_badges(readme_text)                               #########repeat below
+        short_repos.append([total_commits, nameowner, name, owner])         #########now only short
+
+        times_bugs_fixed, dtimes, authors, additions = \
+            build_commit_and_bug_timelines(commits, search_type)
+
+        total_authors.append(len(authors))
+        # note this may separate out same author with different IDs, e.g,
+        # Katherine Barnhart vs Katy Barnhart vs kbarnhart
+        # Not much we can do about this; hope it comes out in the wash
+        total_bugs_per_repo.append(len(times_bugs_fixed))
+        total_commits_from_API.append(total_commits)
+        try:
+            bug_find_rate.append(len(times_bugs_fixed) / len(dtimes))
+        except ZeroDivisionError:
+            bug_find_rate.append(0.)
+
+        try:
+            bug_from_start_time, from_start_time = \
+                build_times_from_first_commit(times_bugs_fixed, dtimes)
+        except TypeError:  # no commits present
+            continue
+
+        if 'coveralls' in badges:
+            coveralls_count.append([enum, owner, name])
+            emph = True
         else:
-            data, next_page, new_cursor = get_data_out
-        for enum, (
-                rep_data, nameowner, name, owner, creation_date,
-                last_push_date, commit_page_data, has_next_page,
-                commits, total_commits, languages, readme_text
-                ) in enumerate(process_aquired_data(data)):
-            badges = look_for_badges(readme_text)
-            all_repos.append([total_commits, nameowner])
-            if total_commits > long_repo:
-                long_repos.append([total_commits, name, owner,
-                                   languages, badges])
-                continue
+            emph = False
+        (commit_rate_median, commit_rate_mean,
+         bug_rate_median, bug_rate_mean) = plot_commit_and_bug_rates(
+            from_start_time, bug_from_start_time, len(authors),
+            additions, emph
+        )
+        commit_rate_median_per_repo.append(commit_rate_median)
+        commit_rate_mean_per_repo.append(commit_rate_mean)
+        bug_rate_median_per_repo.append(bug_rate_median)
+        bug_rate_mean_per_repo.append(bug_rate_mean)
 
-            times_bugs_fixed, dtimes, authors, additions = \
-                build_commit_and_bug_timelines(commits, search_type)
-
-            total_authors.append(len(authors))
-            # note this may separate out same author with different IDs, e.g,
-            # Katherine Barnhart vs Katy Barnhart vs kbarnhart
-            # Not much we can do about this; hope it comes out in the wash
-            total_bugs_per_repo.append(len(times_bugs_fixed))
-            total_commits_from_API.append(total_commits)
-            try:
-                bug_find_rate.append(len(times_bugs_fixed) / len(dtimes))
-            except ZeroDivisionError:
-                bug_find_rate.append(0.)
-
-            try:
-                bug_from_start_time, from_start_time = \
-                    build_times_from_first_commit(times_bugs_fixed, dtimes)
-            except TypeError:  # no commits present
-                continue
-
-            if 'coveralls' in badges:
-                coveralls_count.append([enum, owner, name])
-                emph = True
-            else:
-                emph = False
-            (commit_rate_median, commit_rate_mean,
-             bug_rate_median, bug_rate_mean) = plot_commit_and_bug_rates(
-                from_start_time, bug_from_start_time, len(authors),
-                additions, emph
-            )
-            commit_rate_median_per_repo.append(commit_rate_median)
-            commit_rate_mean_per_repo.append(commit_rate_mean)
-            bug_rate_median_per_repo.append(bug_rate_median)
-            bug_rate_mean_per_repo.append(bug_rate_mean)
-        if next_page:
-            cursor = new_cursor
-        else:
-            break
+    # print('*****')
+    # for repo in sorted(long_repos)[::-1]:
+    #     print(repo)
 
     print('*****')
-    for repo in sorted(long_repos)[::-1]:
-        print(repo)
-
-    print('*****')
-    short_repos = len(commit_rate_mean_per_repo)
+    num_short_repos = len(commit_rate_mean_per_repo)
     short_count = len(coveralls_count)
-    print('Of ' + str(short_repos) + ' short repositories, '
+    print('Of ' + str(num_short_repos) + ' short repositories, '
           + str(short_count) + ' use coveralls')
     if short_count > 0:
         print("They are:")
         for ln in coveralls_count:
             print(ln)
 
-    print('***')
-    print('Found ' + str(len(long_repos)) + ' long repos.')
-    # input('Proceed? [Enter]')
+    # print('***')
+    # print('Found ' + str(len(long_repos)) + ' long repos.')
+    # # input('Proceed? [Enter]')
 
     for enum_long, (
                 total_commits, name, owner, languages, badges
@@ -836,7 +868,7 @@ if __name__ == "__main__":
         except TypeError:  # no commits present
             continue
         if 'coveralls' in badges:
-            coveralls_count.append([enum_long + short_repos, owner, name])
+            coveralls_count.append([enum_long + num_short_repos, owner, name])
             emph = True
         else:
             emph = False
@@ -850,7 +882,7 @@ if __name__ == "__main__":
 
     print('*****')
     total_repos = len(commit_rate_mean_per_repo)
-    long_repos = total_repos - short_repos
+    long_repos = total_repos - num_short_repos
     long_count = len(coveralls_count) - short_count
     print('Of ' + str(long_repos) + ' long repositories, '
           + str(long_count) + ' use coveralls')
