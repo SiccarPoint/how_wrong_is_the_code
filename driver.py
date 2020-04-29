@@ -250,7 +250,7 @@ def get_process_save_data_all_repos(calls, first, query, cursor, headers,
     for i in range(calls):
         get_data_out = get_data(first, query, cursor, headers)
         if len(get_data_out) == 1:
-            repeat count = 0
+            repeat_count = 0
             while repeat_count < query_fail_repeats:
                 get_data_out = get_data(first, query, cursor, headers)
                 if len(get_data_out) == 3:
@@ -261,10 +261,11 @@ def get_process_save_data_all_repos(calls, first, query, cursor, headers,
             else:
                 raise TypeError("Query failed repeatedly, aborting")
         aquired_repos, next_page, cursor = get_data_out
-        for (rep_data, nameowner, name, owner, creation_date,
-             last_push_date, commit_page_data, has_next_page, commits,
-             total_commits, languages, readme_text)
-             in process_aquired_data(aquired_repos):
+        for (
+            rep_data, nameowner, name, owner, creation_date,
+            last_push_date, commit_page_data, has_next_page, commits,
+            total_commits, languages, readme_text
+        ) in process_aquired_data(aquired_repos):
             data_for_repo[nameowner] = {'rep_data': rep_data,
                                         'name':name,
                                         'owner':owner,
@@ -274,11 +275,12 @@ def get_process_save_data_all_repos(calls, first, query, cursor, headers,
                                         'has_next_page': has_next_page,
                                         'commits': commits,
                                         'total_commits': total_commits,
-                                        'languages': languages,
+                                        'languages': list(languages),
                                         'readme_text': readme_text}
             # this only contains basic Python types, so saving should be OK
     with open(os.path.join(query, 'savedata.json'), 'w') as outfile:
         json.dump(data_for_repo, outfile)
+    return data_for_repo
 
 
 def load_processed_data_all_repos(query):
@@ -302,7 +304,7 @@ def load_processed_data_all_repos(query):
         has_next_page = repo_dict['has_next_page']
         commits = repo_dict['commits']
         total_commits = repo_dict['total_commits']
-        languages = repo_dict['languages']
+        languages = set(repo_dict['languages'])
         readme_text = repo_dict['readme_text']
         yield (rep_data, nameowner, name, owner, creation_date,
                last_push_date, commit_page_data, has_next_page, commits,
