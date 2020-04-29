@@ -7,12 +7,12 @@ from datetime import datetime
 from header.header import HEADER
 from requests.auth import HTTPDigestAuth
 
-COUNT_ADDITIONS = False
+COUNT_ADDITIONS = True
 # This is a hardwired trigger as doing this makes it very likely we hit the
 # API query limiters, requiring a painful decrease in performance &
 # unpredictable crashes can occur
 if COUNT_ADDITIONS:
-    history_page = 50
+    history_page = 25
 else:
     history_page = 100
 
@@ -784,6 +784,8 @@ if __name__ == "__main__":
         max_iters_for_commits = 15  # 50 gives 5000
         if COUNT_ADDITIONS:
             # not yet quite stable
+            print('Searching for commit lengths, this might be slow...')
+            pages = 10
             get_data_limit = 10
             long_repo = 50
         else:
