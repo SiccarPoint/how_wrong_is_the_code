@@ -753,7 +753,7 @@ def cloc_repo(repo_nameowner):
 
 
 if __name__ == "__main__":
-    topic = 'chemistry'  # 'landlab', 'terrainbento', 'physics', 'chemistry', 'doi.org'
+    topic = 'physics'  # 'landlab', 'terrainbento', 'physics', 'chemistry', 'doi.org'
     # the search for Landlab isn't pulling landlab/landlab as a long repo!? Check
     search_type = 'tight'  # for how to pick bugs ('loose', 'tight', 'major')
     search_fresh = False
@@ -795,7 +795,8 @@ if __name__ == "__main__":
             pages, get_data_limit, topic, long_repo, cursor, HEADER
         )
         print('Now interrogating long repos. This might be slow...')
-
+        get_process_save_commit_data_long_repos(topic, HEADER,
+                                                max_iters=max_iters_for_commits)
 
     # now load and proceed:
     for enum, (
@@ -859,13 +860,17 @@ if __name__ == "__main__":
     # print('Found ' + str(len(long_repos)) + ' long repos.')
     # # input('Proceed? [Enter]')
 
+    # load the save long repo data
+    long_repo_commit_dict = load_processed_commit_data_long_repos(topic)
+
     for enum_long, (
-                total_commits, name, owner, languages, badges
-            ) in enumerate(sorted(long_repos)[::-1]):
-        print('Reading more commits for ' + owner + '/' + name
-              + ', total commits: ' + str(total_commits))
-        commits = get_commits_single_repo(name, owner, HEADER,
-                                          max_iters=max_iters_for_commits)
+        rep_data, nameowner, name, owner, creation_date,
+        last_push_date, commit_page_data, has_next_page,
+        commits, total_commits, languages, readme_text
+    ) in enumerate(load_processed_data_all_repos(topic, 'long')):
+        badges = look_for_badges(readme_text)
+        long_repos.append([total_commits, nameowner, name, owner])
+        commits = long_repo_commit_dict[nameowner]
         print('Successfully loaded ' + str(len(commits)) + ' commits')
         times_bugs_fixed, dtimes, authors, additions = \
             build_commit_and_bug_timelines(commits, search_type)
