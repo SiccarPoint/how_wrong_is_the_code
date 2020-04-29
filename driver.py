@@ -372,6 +372,13 @@ def load_processed_data_all_repos(query, short_or_long_repos):
                total_commits, languages, readme_text)
 
 
+def load_processed_commit_data_long_repos(query):
+    with open(os.path.join(query, 'savedata_long_commits.json'),
+              'r') as infile:
+        long_repo_commit_dict = json.load(infile)
+    return long_repo_commit_dict
+
+
 def convert_datetime(datetime_str):
     yr = int(datetime_str[:4])
     mo = int(datetime_str[5:7])
