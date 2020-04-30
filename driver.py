@@ -819,7 +819,7 @@ if __name__ == "__main__":
         if COUNT_ADDITIONS:
             # not yet quite stable
             print('Searching for commit lengths, this might be slow...')
-            get_data_limit = 5  # these terms matter for stability
+            get_data_limit = 10  # these terms matter for stability
             long_repo = 50
         else:
             get_data_limit = 20
