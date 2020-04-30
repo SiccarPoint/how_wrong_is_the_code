@@ -172,7 +172,7 @@ def get_commits_single_repo(name, owner, headers, max_iters=10,
         except TypeError:  # query failed
             repeat_count = 0
             while repeat_count < query_fail_repeats:
-                time.sleep(10. + 20. * np.random.rand())  # cooldown period
+                time.sleep(30. + 10. * np.random.rand())  # cooldown period
                 r = requests.post('https://api.github.com/graphql',
                                   json = {"query": q_single_repo,
                                           "variables": {
@@ -337,6 +337,7 @@ def get_process_save_data_all_repos(calls, first, query, long_repo_length,
         json.dump(data_for_repo_long, outfile)
     with open(os.path.join(query, 'savecursor.json'), 'w') as outfile:
         json.dump(cursor, outfile)
+    # these all overwrite any existing content
 
 
 def get_process_save_commit_data_long_repos(query, headers, max_iters):
@@ -345,6 +346,8 @@ def get_process_save_commit_data_long_repos(query, headers, max_iters):
     max_iters pages of commits for the long repositories specified in an
     existing savefile, created the the search term query. Commit savefile is
     "query/savedata_long_commits.json".
+    If the API call fails, function will print a warning message but still
+    save an output file to allow continuing of the search in a subsequent call.
 
     Parameters
     ----------
@@ -355,22 +358,39 @@ def get_process_save_commit_data_long_repos(query, headers, max_iters):
     max_iters : int
         The number of pages of commits to read.
     """
-    long_repo_commit_dict = {}
+    # See if there is an existing dict to load:
+    try:
+        with open(os.path.join(query, 'savedata_long_commits.json'),
+                  'r') as infile:
+            long_repo_commit_dict = json.load(infile)
+        print('Long commit loader is adding to an existing savefile...')
+    except FileNotFoundError:
+        long_repo_commit_dict = {}
     repo_count = 0
     for (
         rep_data, nameowner, name, owner, creation_date,
         last_push_date, commit_page_data, has_next_page,
         commits, total_commits, languages, readme_text
     ) in load_processed_data_all_repos(query, 'long'):
-        print('Calling API for', nameowner)
-        print('This is long repo', repo_count)
-        commits = get_commits_single_repo(name, owner, headers,
-                                          max_iters=max_iters)
-        long_repo_commit_dict[nameowner] = commits
+        if nameowner not in long_repo_commit_dict.keys():
+            print('Calling API for', nameowner)
+            print('This is long repo', repo_count)
+            try:
+                commits = get_commits_single_repo(name, owner, headers,
+                                                  max_iters=max_iters)
+            except TypeError:  # API refuses connection repeatedly
+                print('WARNING: get_process_save_commit_data_long_repos did '
+                      + 'not complete. Run it again to finish off remaining '
+                      + 'repos.')
+                break  # i.e., proceed to save
+            long_repo_commit_dict[nameowner] = commits
+        else:
+            print('Skipping', nameowner)
         repo_count += 1
     with open(os.path.join(query, 'savedata_long_commits.json'),
               'w') as outfile:
         json.dump(long_repo_commit_dict, outfile)
+    # this overwrites, if there was existing content
 
 
 def load_processed_data_all_repos(query, short_or_long_repos):
@@ -790,7 +810,7 @@ if __name__ == "__main__":
     topic = 'physics'  # 'landlab', 'terrainbento', 'physics', 'chemistry', 'doi.org'
     # the search for Landlab isn't pulling landlab/landlab as a long repo!? Check
     search_type = 'tight'  # for how to pick bugs ('loose', 'tight', 'major')
-    search_fresh = False
+    search_fresh = True
     # ^If true, script begins by a fresh call to the API and then a save
     # If false, proceeds with saved data only
     if search_fresh:
@@ -799,14 +819,14 @@ if __name__ == "__main__":
         if COUNT_ADDITIONS:
             # not yet quite stable
             print('Searching for commit lengths, this might be slow...')
-            get_data_limit = 10  # these terms matter for stability
+            get_data_limit = 5  # these terms matter for stability
             long_repo = 50
         else:
             get_data_limit = 20
             long_repo = 100
 
         # leave this section alone:
-        pages = 200 // get_data_limit + 1
+        pages = approx_desired_repos // get_data_limit + 1
         max_iters_for_commits = approx_max_commits // HISTORY_PAGE
         cursor = None
 
@@ -831,7 +851,8 @@ if __name__ == "__main__":
     # do the API call fresh if needed:
     if search_fresh:
         get_process_save_data_all_repos(
-            pages, get_data_limit, topic, long_repo, cursor, HEADER
+            pages, get_data_limit, topic, long_repo, cursor, HEADER,
+            continue_run=False
         )
         print('Now interrogating long repos. This might be slow...')
         get_process_save_commit_data_long_repos(topic, HEADER,
