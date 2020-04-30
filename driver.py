@@ -236,12 +236,13 @@ def process_aquired_data(aquired_repos):
 
 
 def get_process_save_data_all_repos(calls, first, query, long_repo_length,
-                                    cursor, headers,
+                                    cursor, headers, continue_run=True,
                                     query_fail_repeats=3):
     """
     Operates get_data and process_aquired_data to produce the data
     ingested by the other functions, but then saves it rather than outputting
-    it.
+    it. At the end of the run, we save a cursor as to permit continuing
+    (save_cursor.json).
 
     Parameters
     ----------
@@ -258,22 +259,34 @@ def get_process_save_data_all_repos(calls, first, query, long_repo_length,
         Cursor for the starting point of the search (None if the start)
     headers : str
         Your Security Key for the Github API (DO NOT SAVE IN THIS SCRIPT)
+    continue_run : bool
+        If True, looks for a cursor savefile (savecursor.json), loads
+        it, and uses it as the key from which to continue.
     query_fail_repeats : int
         Number of repeat attempts permitted after a failed API call.
     """
-    try:
-        os.mkdir(query)
-    except FileExistsError:
-        raise FileExistsError('A save already exists for this query! '
-                              + 'Delete its directory to create a new one.')
-    data_for_repo_short = {}
-    data_for_repo_long = {}
+    if not continue_run:
+        try:
+            os.mkdir(query)
+        except FileExistsError:
+            raise FileExistsError('A save already exists for this query! '
+                                  + 'Delete its directory to create a new one.')
+        data_for_repo_short = {}
+        data_for_repo_long = {}
+    else:
+        print('Continuing existing search...')
+        with open(os.path.join(query, 'savecursor.json'), 'r') as infile:
+            cursor = json.load(infile)
+        with open(os.path.join(query, 'savedata_short.json'), 'r') as infile:
+            data_for_repo_short = json.load(infile)
+        with open(os.path.join(query, 'savedata_long.json'), 'r') as infile:
+            data_for_repo_long = json.load(infile)
     for i in range(calls):
         get_data_out = get_data(first, query, cursor, headers)
         if len(get_data_out) != 3:
             repeat_count = 0
             while repeat_count < query_fail_repeats:
-                time.sleep(10. + 20. * np.random.rand())  # cooldown period
+                time.sleep(30. + 10. * np.random.rand())  # cooldown period
                 get_data_out = get_data(first, query, cursor, headers)
                 if len(get_data_out) == 3:
                     break
@@ -322,6 +335,8 @@ def get_process_save_data_all_repos(calls, first, query, long_repo_length,
         json.dump(data_for_repo_short, outfile)
     with open(os.path.join(query, 'savedata_long.json'), 'w') as outfile:
         json.dump(data_for_repo_long, outfile)
+    with open(os.path.join(query, 'savecursor.json'), 'w') as outfile:
+        json.dump(cursor, outfile)
 
 
 def get_process_save_commit_data_long_repos(query, headers, max_iters):
