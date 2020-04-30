@@ -382,7 +382,7 @@ def get_process_save_commit_data_long_repos(query, headers, max_iters):
                 print('WARNING: get_process_save_commit_data_long_repos did '
                       + 'not complete. Run it again to finish off remaining '
                       + 'repos.')
-                break  # i.e., proceed to save
+                continue
             long_repo_commit_dict[nameowner] = commits
         else:
             print('Skipping', nameowner)
@@ -807,19 +807,20 @@ def cloc_repo(repo_nameowner):
 
 
 if __name__ == "__main__":
-    topic = 'physics'  # 'landlab', 'terrainbento', 'physics', 'chemistry', 'doi.org'
+    topic = 'chemistry'  # 'landlab', 'terrainbento', 'physics', 'chemistry', 'doi.org'
     # the search for Landlab isn't pulling landlab/landlab as a long repo!? Check
     search_type = 'tight'  # for how to pick bugs ('loose', 'tight', 'major')
     search_fresh = True
+    continue_old_saves = False
     # ^If true, script begins by a fresh call to the API and then a save
     # If false, proceeds with saved data only
     if search_fresh:
-        approx_desired_repos = 200
+        approx_desired_repos = 100
         approx_max_commits = 2000
         if COUNT_ADDITIONS:
             # not yet quite stable
             print('Searching for commit lengths, this might be slow...')
-            get_data_limit = 10  # these terms matter for stability
+            get_data_limit = 8  # these terms matter for stability
             long_repo = 50
         else:
             get_data_limit = 20
@@ -852,7 +853,7 @@ if __name__ == "__main__":
     if search_fresh:
         get_process_save_data_all_repos(
             pages, get_data_limit, topic, long_repo, cursor, HEADER,
-            continue_run=False
+            continue_run=continue_old_saves
         )
         print('Now interrogating long repos. This might be slow...')
         get_process_save_commit_data_long_repos(topic, HEADER,
