@@ -6,6 +6,7 @@ from matplotlib.pyplot import plot, figure, show, xlabel, ylabel, xlim, ylim, ba
 from datetime import datetime
 from header.header import HEADER
 from requests.auth import HTTPDigestAuth
+from copy import copy
 
 COUNT_ADDITIONS = True
 # This is a hardwired trigger as doing this makes it very likely we hit the
@@ -267,7 +268,7 @@ def get_process_save_data_all_repos(calls, first, query, long_repo_length,
     """
     if not continue_run:
         try:
-            os.mkdir(query)
+            os.mkdir(query_to_queryfname(query))
         except FileExistsError:
             raise FileExistsError('A save already exists for this query! '
                                   + 'Delete its directory to create a new one.')
@@ -275,11 +276,11 @@ def get_process_save_data_all_repos(calls, first, query, long_repo_length,
         data_for_repo_long = {}
     else:
         print('Continuing existing search...')
-        with open(os.path.join(query, 'savecursor.json'), 'r') as infile:
+        with open(os.path.join(query_to_queryfname(query), 'savecursor.json'), 'r') as infile:
             cursor = json.load(infile)
-        with open(os.path.join(query, 'savedata_short.json'), 'r') as infile:
+        with open(os.path.join(query_to_queryfname(query), 'savedata_short.json'), 'r') as infile:
             data_for_repo_short = json.load(infile)
-        with open(os.path.join(query, 'savedata_long.json'), 'r') as infile:
+        with open(os.path.join(query_to_queryfname(query), 'savedata_long.json'), 'r') as infile:
             data_for_repo_long = json.load(infile)
     for i in range(calls):
         get_data_out = get_data(first, query, cursor, headers)
@@ -331,11 +332,11 @@ def get_process_save_data_all_repos(calls, first, query, long_repo_length,
                     'readme_text': readme_text
                 }
             # these only contains basic Python types, so saving should be OK
-    with open(os.path.join(query, 'savedata_short.json'), 'w') as outfile:
+    with open(os.path.join(query_to_queryfname(query), 'savedata_short.json'), 'w') as outfile:
         json.dump(data_for_repo_short, outfile)
-    with open(os.path.join(query, 'savedata_long.json'), 'w') as outfile:
+    with open(os.path.join(query_to_queryfname(query), 'savedata_long.json'), 'w') as outfile:
         json.dump(data_for_repo_long, outfile)
-    with open(os.path.join(query, 'savecursor.json'), 'w') as outfile:
+    with open(os.path.join(query_to_queryfname(query), 'savecursor.json'), 'w') as outfile:
         json.dump(cursor, outfile)
     # these all overwrite any existing content
 
@@ -360,7 +361,7 @@ def get_process_save_commit_data_long_repos(query, headers, max_iters):
     """
     # See if there is an existing dict to load:
     try:
-        with open(os.path.join(query, 'savedata_long_commits.json'),
+        with open(os.path.join(query_to_queryfname(query), 'savedata_long_commits.json'),
                   'r') as infile:
             long_repo_commit_dict = json.load(infile)
         print('Long commit loader is adding to an existing savefile...')
@@ -387,7 +388,7 @@ def get_process_save_commit_data_long_repos(query, headers, max_iters):
         else:
             print('Skipping', nameowner)
         repo_count += 1
-    with open(os.path.join(query, 'savedata_long_commits.json'),
+    with open(os.path.join(query_to_queryfname(query), 'savedata_long_commits.json'),
               'w') as outfile:
         json.dump(long_repo_commit_dict, outfile)
     # this overwrites, if there was existing content
@@ -411,7 +412,7 @@ def load_processed_data_all_repos(query, short_or_long_repos):
         savefile = 'savedata_long.json'
     else:
         raise ValueError("short_or_long_repos must be 'short' or 'long'")
-    with open(os.path.join(query, savefile)) as json_file:
+    with open(os.path.join(query_to_queryfname(query), savefile)) as json_file:
         data_from_repo = json.load(json_file)
     print('Loaded', len(data_from_repo), short_or_long_repos, 'repositories.')
     for nameowner, repo_dict in data_from_repo.items():
@@ -432,10 +433,18 @@ def load_processed_data_all_repos(query, short_or_long_repos):
 
 
 def load_processed_commit_data_long_repos(query):
-    with open(os.path.join(query, 'savedata_long_commits.json'),
+    with open(os.path.join(query_to_queryfname(query), 'savedata_long_commits.json'),
               'r') as infile:
         long_repo_commit_dict = json.load(infile)
     return long_repo_commit_dict
+
+
+def query_to_queryfname(query):
+    """Strip bad chars (/ :) from a query to use it as a filename."""
+    fname = query
+    for ch in ('/', ':'):
+        fname = fname.replace(ch, '')
+    return fname
 
 
 def convert_datetime(datetime_str):
@@ -807,11 +816,11 @@ def cloc_repo(repo_nameowner):
 
 
 if __name__ == "__main__":
-    topic = 'chemistry'  # 'landlab', 'terrainbento', 'physics', 'chemistry', 'doi.org'
+    topic = 'chemistry'  # 'landlab', 'terrainbento', 'physics', 'chemistry', 'https://doi.org', 'biolog'
     # the search for Landlab isn't pulling landlab/landlab as a long repo!? Check
     search_type = 'tight'  # for how to pick bugs ('loose', 'tight', 'major')
     search_fresh = True
-    continue_old_saves = False
+    continue_old_saves = True
     # ^If true, script begins by a fresh call to the API and then a save
     # If false, proceeds with saved data only
     if search_fresh:
@@ -866,11 +875,15 @@ if __name__ == "__main__":
         commits, total_commits, languages, readme_text
     ) in enumerate(load_processed_data_all_repos(topic, 'short')):
         badges = look_for_badges(readme_text)                               #########repeat below
+
+        try:
+            times_bugs_fixed, dtimes, authors, additions = \
+                build_commit_and_bug_timelines(commits, search_type)
+        except TypeError:
+                # bad entry
+                continue
+
         short_repos.append([total_commits, nameowner, name, owner])         #########now only short
-
-        times_bugs_fixed, dtimes, authors, additions = \
-            build_commit_and_bug_timelines(commits, search_type)
-
         total_authors.append(len(authors))
         # note this may separate out same author with different IDs, e.g,
         # Katherine Barnhart vs Katy Barnhart vs kbarnhart
@@ -930,11 +943,15 @@ if __name__ == "__main__":
         commits, total_commits, languages, readme_text
     ) in enumerate(load_processed_data_all_repos(topic, 'long')):
         badges = look_for_badges(readme_text)
-        long_repos.append([total_commits, nameowner, name, owner])
         commits = long_repo_commit_dict[nameowner]
         print('Successfully loaded ' + str(len(commits)) + ' commits')
-        times_bugs_fixed, dtimes, authors, additions = \
-            build_commit_and_bug_timelines(commits, search_type)
+        try:
+            times_bugs_fixed, dtimes, authors, additions = \
+                build_commit_and_bug_timelines(commits, search_type)
+        except TypeError:
+            # bad data
+            continue
+        long_repos.append([total_commits, nameowner, name, owner])
         total_authors.append(len(authors))
         total_bugs_per_repo.append(len(times_bugs_fixed))
         total_commits_from_API.append(total_commits)
@@ -1199,6 +1216,10 @@ if __name__ == "__main__":
     # Based on the 20 longest commit sequences, the mean of "steady" bug
     # finding is 0.045 (0.021-> 0.069). Chemistry is 0.037 (0.023->0.052)
     # i.e., by the time you add 20 commits, you would expect one bug
+
+    # There are some repos that *are not* code (e.g. learning resources).
+    # We could thin these out by checking for language = Python, C, Javascript,
+    # etc.
 
     # What is the commit number distribution of the zero bug code?
     figure('Commits in zero bug repos')
