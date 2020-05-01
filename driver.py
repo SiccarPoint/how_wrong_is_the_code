@@ -58,8 +58,8 @@ if COUNT_ADDITIONS:
     q += '                      additions\n'
 q += '''                      author {
                         name
-#                        email
-#                        date
+                        email
+                        date
                       }
                       pushedDate
                       messageHeadline
@@ -207,25 +207,33 @@ def get_commits_single_repo(name, owner, headers, max_iters=10,
 
 def process_aquired_data(aquired_repos):
     for rep in aquired_repos:
-        try:  # incomplete returns will fail with Nones in here, hence exception
-            rep_data = rep['node']
-            nameowner = rep_data['nameWithOwner']
-            name = rep_data['name']
-            owner = rep_data['owner']['login']
-            languages_list = rep_data['languages']['nodes']
-            creation_date = rep_data['createdAt']
-            last_push_date = rep_data['pushedAt']
+        rep_data = rep['node']
+        nameowner = rep_data['nameWithOwner']
+        name = rep_data['name']
+        owner = rep_data['owner']['login']
+        languages_list = rep_data['languages']['nodes']
+        creation_date = rep_data['createdAt']
+        last_push_date = rep_data['pushedAt']
+        try:
             commit_page_data = rep_data['ref']['target']['history']
-            total_commits = rep_data['ref']['target']['history']['totalCount']
-            readme_text = rep_data['object']['text']
-            has_next_page = commit_page_data['pageInfo']['hasNextPage']
-            commits = commit_page_data['edges']
-            # ^^this is the list of <=long_repo commits
-            dt_start = convert_datetime(creation_date)
-            dt_last_push = convert_datetime(last_push_date)
-            languages = set(lang['name'] for lang in languages_list)
         except TypeError:
+            # repo returns broken commit data, so
+            print('***Broken commit interface for',  nameowner)
             continue
+        total_commits = rep_data['ref']['target']['history']['totalCount']
+        has_next_page = commit_page_data['pageInfo']['hasNextPage']
+        commits = commit_page_data['edges']
+        try:
+            readme_text = rep_data['object']['text']
+        except TypeError:
+            # no readme file, so
+            readme_text = ''
+        # ^^this is the list of <=long_repo commits
+        dt_start = convert_datetime(creation_date)
+        dt_last_push = convert_datetime(last_push_date)
+        languages = set(lang['name'] for lang in languages_list)
+        # except TypeError:
+        #     continue
         dt_delta = dt_last_push-dt_start
 
         print(name + ":\t" +str(dt_delta) + "\t" +str(total_commits))
@@ -470,7 +478,7 @@ def first_commit_dtime(commits, is_next_page, override_next_page=False):
     if not is_next_page or override_next_page:
         lastpt = -1
         while 1:
-            firsttime = convert_datetime(commits[lastpt]['node']['pushedDate'])
+            firsttime = convert_datetime(commits[lastpt]['node']['author']['date'])
             if firsttime is not None:
                 return firsttime
             else:
@@ -484,15 +492,16 @@ def yield_commits_data(commits):
     """
     for c in commits:
         data = c['node']
-        author_name = data['author']['name']
+        try:
+            author_name = data['author']['name']
+        except TypeError:
+            # This commit is recorded entirely wrongly, so
+            continue
         if COUNT_ADDITIONS:
             additions = data['additions']
         else:
             additions = None
-        try:
-            pushed_datetime = convert_datetime(data['pushedDate'])
-        except TypeError:
-            continue
+        pushed_datetime = convert_datetime(data['author']['date'])
         message_headline = data['messageHeadline']
         message = data['message']
         yield (author_name, pushed_datetime, message_headline, message,
@@ -824,7 +833,7 @@ if __name__ == "__main__":
     # ^If true, script begins by a fresh call to the API and then a save
     # If false, proceeds with saved data only
     if search_fresh:
-        approx_desired_repos = 100
+        approx_desired_repos = 500
         approx_max_commits = 2000
         if COUNT_ADDITIONS:
             # not yet quite stable
@@ -874,16 +883,12 @@ if __name__ == "__main__":
         last_push_date, commit_page_data, has_next_page,
         commits, total_commits, languages, readme_text
     ) in enumerate(load_processed_data_all_repos(topic, 'short')):
-        badges = look_for_badges(readme_text)                               #########repeat below
+        badges = look_for_badges(readme_text)
 
-        try:
-            times_bugs_fixed, dtimes, authors, additions = \
-                build_commit_and_bug_timelines(commits, search_type)
-        except TypeError:
-                # bad entry
-                continue
+        times_bugs_fixed, dtimes, authors, additions = \
+            build_commit_and_bug_timelines(commits, search_type)
 
-        short_repos.append([total_commits, nameowner, name, owner])         #########now only short
+        short_repos.append([total_commits, nameowner, name, owner])
         total_authors.append(len(authors))
         # note this may separate out same author with different IDs, e.g,
         # Katherine Barnhart vs Katy Barnhart vs kbarnhart
@@ -899,7 +904,7 @@ if __name__ == "__main__":
             bug_from_start_time, from_start_time = \
                 build_times_from_first_commit(times_bugs_fixed, dtimes)
         except TypeError:  # no commits present
-            continue
+            print(nameowner)
 
         if 'coveralls' in badges:
             coveralls_count.append([enum, owner, name])
@@ -945,12 +950,12 @@ if __name__ == "__main__":
         badges = look_for_badges(readme_text)
         commits = long_repo_commit_dict[nameowner]
         print('Successfully loaded ' + str(len(commits)) + ' commits')
-        try:
-            times_bugs_fixed, dtimes, authors, additions = \
-                build_commit_and_bug_timelines(commits, search_type)
-        except TypeError:
-            # bad data
-            continue
+        # try:
+        times_bugs_fixed, dtimes, authors, additions = \
+            build_commit_and_bug_timelines(commits, search_type)
+        # except TypeError:
+        #     # bad data
+        #     continue
         long_repos.append([total_commits, nameowner, name, owner])
         total_authors.append(len(authors))
         total_bugs_per_repo.append(len(times_bugs_fixed))
@@ -959,11 +964,10 @@ if __name__ == "__main__":
             bug_find_rate.append(len(times_bugs_fixed) / len(dtimes))
         except ZeroDivisionError:
             bug_find_rate.append(0.)
-        try:
-            bug_from_start_time, from_start_time = \
-                build_times_from_first_commit(times_bugs_fixed, dtimes)
-        except TypeError:  # no commits present
-            continue
+
+        bug_from_start_time, from_start_time = \
+            build_times_from_first_commit(times_bugs_fixed, dtimes)
+
         if 'coveralls' in badges:
             coveralls_count.append([enum_long + num_short_repos, owner, name])
             emph = True
