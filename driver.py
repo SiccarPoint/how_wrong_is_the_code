@@ -819,7 +819,7 @@ if __name__ == "__main__":
     topic = 'https://doi.org'  # 'landlab', 'terrainbento', 'physics', 'chemistry', 'https://doi.org', 'biolog'
     # the search for Landlab isn't pulling landlab/landlab as a long repo!? Check
     search_type = 'tight'  # for how to pick bugs ('loose', 'tight', 'major')
-    search_fresh = True
+    search_fresh = False
     continue_old_saves = True
     # ^If true, script begins by a fresh call to the API and then a save
     # If false, proceeds with saved data only
