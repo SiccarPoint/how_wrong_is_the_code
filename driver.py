@@ -153,7 +153,7 @@ def get_data(first, query, cursor, headers):
 
 
 def get_commits_single_repo(name, owner, headers, max_iters=10,
-                            query_fail_repeats=3):
+                            query_fail_repeats=5):
     """Return list of all commits for a single identified repo.
     """
     commits_after = None
@@ -238,7 +238,7 @@ def process_aquired_data(aquired_repos):
 
 def get_process_save_data_all_repos(calls, first, query, long_repo_length,
                                     cursor, headers, continue_run=True,
-                                    query_fail_repeats=3):
+                                    query_fail_repeats=5):
     """
     Operates get_data and process_aquired_data to produce the data
     ingested by the other functions, but then saves it rather than outputting
@@ -816,7 +816,7 @@ def cloc_repo(repo_nameowner):
 
 
 if __name__ == "__main__":
-    topic = 'chemistry'  # 'landlab', 'terrainbento', 'physics', 'chemistry', 'https://doi.org', 'biolog'
+    topic = 'https://doi.org'  # 'landlab', 'terrainbento', 'physics', 'chemistry', 'https://doi.org', 'biolog'
     # the search for Landlab isn't pulling landlab/landlab as a long repo!? Check
     search_type = 'tight'  # for how to pick bugs ('loose', 'tight', 'major')
     search_fresh = True
