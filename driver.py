@@ -1,6 +1,6 @@
 # remember to make an HTTPDigestAuth object!
 
-import requests, json, re, os, pandas, sqlite3, time
+import requests, json, re, os, pandas, sqlite3, time, sqlalchemy
 import numpy as np
 from matplotlib.pyplot import plot, figure, show, xlabel, ylabel, xlim, ylim, bar, hist
 from datetime import datetime
@@ -17,6 +17,11 @@ if COUNT_ADDITIONS:
 else:
     HISTORY_PAGE = 100
 
+LANGUAGES_TO_TEST_FOR = (
+    'Java', 'C', 'C++', 'Python', 'Cython', 'C#', 'Ruby', 'MATLAB',
+    'Objective-C', 'R', 'Fortran 77', 'Fortran 90', 'Fortran 95', 'Rust',
+    'Haskell'
+)
 
 q = '''query($first: Int!, $query: String!, $repo_after: String, $commits_after: String){
   search(first: $first, type: REPOSITORY, query: $query, after: $repo_after) {
@@ -716,6 +721,11 @@ def plot_commit_and_bug_rates(from_start_time, bug_from_start_time,
         ylabel('Cumulative number of bugs')
         # note this creates POORLY linear, very steppy plots, notably much
         # worse than the bugs vs commits plot
+        # But, seems like we're seeing bursts of bug finding, all with similar-
+        # ish rising gradients, interspersed with periods of code growth.
+        # The steps don't notably change gradient with amount of material added
+        # (though hard to judge). This would imply there are still plenty of
+        # bugs to find the whole time.
 
     # more people means more commits, and broadly linearly, so
     figure('commits per user')
@@ -811,17 +821,54 @@ def spatial_percentile(percentile, points_on_line_x, points_on_line_y):
 
 
 def cloc_repo(repo_nameowner):
+    """
+    Takes a nameowner for a Github repo and returns a dict of scientific
+    programming languages used and the number of lines of each.
+    """
     assert type(repo_nameowner) is str
+    dict_language_to_codelines = {}
+    print('Running cloc on', repo_nameowner)
     bashscript = 'git clone --depth 1 https://github.com/'
     bashscript += repo_nameowner + '.git temp-linecount-repo &&\n'
     bashscript += 'cloc --sql 1 temp-linecount-repo | sqlite3 repo_cloc.db &&\n'
     bashscript += 'rm -rf temp-linecount-repo\n'
     os.system(bashscript)
     con = sqlite3.connect('repo_cloc.db')
-    out = pandas.read_sql('SELECT * FROM t', con)
+    try:
+        out = pandas.read_sql('SELECT * FROM t', con)
+    except (sqlalchemy.OperationalError):
+        # some repos can have no table
+        return {}
     os.system('rm repo_cloc.db')
-    lines_of_code = out['nCode'].sum()
-    return lines_of_code
+    total_lines_of_code = out['nCode'].sum()
+    for lang in LANGUAGES_TO_TEST_FOR:
+        lines_in_lang = out['nCode'][out['Language'] == lang]
+        dict_language_to_codelines[lang] = int(lines_in_lang.sum())
+    print('***')
+    return dict_language_to_codelines
+
+
+def repo_lengths_to_file(repo_nameowners):
+    """
+    Adds to a json file called repo_lengths.json in top level of the dir
+    structure that records the length of repos called nameowner.
+
+    Also returns the dict, so doubles as a loader.
+    """
+    if os.path.exists('repo_lengths.json'):
+        with open('repo_lengths.json', 'r') as infile:
+            length_dict = json.load(infile)
+    else:
+        length_dict = {}
+    for repo in repo_nameowners:
+        if repo not in length_dict.keys():
+            lines = cloc_repo(repo)
+            length_dict[repo] = lines
+    with open('repo_lengths.json', 'w') as outfile:
+        json.dump(length_dict, outfile)
+    return_dict = {repo:entry for (repo, entry) in length_dict.items()
+                   if repo in repo_nameowners}
+    return return_dict
 
 
 if __name__ == "__main__":
@@ -866,6 +913,10 @@ if __name__ == "__main__":
     long_repos = []  # will store [num_commits, nameowner, name, owner]
     coveralls_count = []
     total_commits_from_API = []
+    if COUNT_ADDITIONS:
+        total_lines_from_API = []
+        bug_find_rate_per_line = []  # i.e., bugs per line
+        bugs_per_line_infinite_count = 0  # used for tracking bug finds, no lines added
 
     # do the API call fresh if needed:
     if search_fresh:
@@ -899,6 +950,16 @@ if __name__ == "__main__":
             bug_find_rate.append(len(times_bugs_fixed) / len(dtimes))
         except ZeroDivisionError:
             bug_find_rate.append(0.)
+        if COUNT_ADDITIONS:
+            total_lines_added = np.sum(additions)
+            total_lines_from_API.append(total_lines_added)
+            try:
+                bug_find_rate_per_line.append(
+                    len(times_bugs_fixed) / total_lines_added
+                )
+            except ZeroDivisionError:
+                bug_find_rate_per_line.append(float('nan'))
+                bugs_per_line_infinite_count += 1
 
         try:
             bug_from_start_time, from_start_time = \
@@ -964,6 +1025,16 @@ if __name__ == "__main__":
             bug_find_rate.append(len(times_bugs_fixed) / len(dtimes))
         except ZeroDivisionError:
             bug_find_rate.append(0.)
+        if COUNT_ADDITIONS:
+            total_lines_added = np.sum(additions)
+            total_lines_from_API.append(total_lines_added)
+            try:
+                bug_find_rate_per_line.append(
+                    len(times_bugs_fixed) / total_lines_added
+                )
+            except ZeroDivisionError:
+                bug_find_rate_per_line.append(float('nan'))
+                bugs_per_line_infinite_count += 1
 
         bug_from_start_time, from_start_time = \
             build_times_from_first_commit(times_bugs_fixed, dtimes)
@@ -1093,6 +1164,9 @@ if __name__ == "__main__":
          bug_find_rate_array[cov_indices], 'kx')  # coveralls ones in black
     xlabel('Total number of commits')
     ylabel('Fraction of all commits finding bugs')
+
+    figure('bug rate per line vs cumulative lines')
+    plot(total_lines_from_API, bug_find_rate_per_line, 'x')
 
     # calculate the total number of bugs missing from the shorter projects
     # take the final value on the moving avg as the idealised perfect find rate
