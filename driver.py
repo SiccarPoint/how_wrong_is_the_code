@@ -7,7 +7,8 @@ from datetime import datetime
 from header.header import HEADER
 from requests.auth import HTTPDigestAuth
 from copy import copy
-from sqlalchemy.exc import OperationalError
+from sqlalchemy.exc import OperationalError, DatabaseError
+from utils import moving_average
 
 COUNT_ADDITIONS = True
 # This is a hardwired trigger as doing this makes it very likely we hit the
@@ -751,12 +752,6 @@ def plot_commit_and_bug_rates(from_start_time, bug_from_start_time,
     return commit_rate_median, commit_rate_mean, bug_rate_median, bug_rate_mean
 
 
-def moving_average(a, n=10) :
-    ret = np.cumsum(a, dtype=float)
-    ret[n:] = ret[n:] - ret[:-n]
-    return ret[n - 1:] / n
-
-
 # def fit_curvature(x, y, centering):
 #     """
 #     Fits the equation c0 + c1*x + c2*x**2 to the data y, then calculates the
@@ -837,7 +832,7 @@ def cloc_repo(repo_nameowner):
     con = sqlite3.connect('repo_cloc.db')
     try:
         out = pandas.read_sql('SELECT * FROM t', con)
-    except OperationalError:
+    except (OperationalError, DatabaseError):
         # some repos can have no table
         return {}
     os.system('rm repo_cloc.db')
