@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from bisect import insort
+from utils import moving_average
 
 # assumption 1: bugs have a representative lifetime, measured somehow in
 # person-hrs spent on the code. i.e., bugs decay against some timescale.
@@ -27,6 +28,8 @@ def advance_finding_bugs(current_time, bug_creation_time,
     bug_creation_time, finding bugs in the event_stack and recording them
     in durations_between_bug_finds as necessary. If enough bugs have been
     found before we reach bug_creation_time, returns a ValueError.
+
+    Returns an IndexError if there are no bugs in the stack when called.
     """
     while (current_time + event_stack.time_until_next_bug(current_time)
            < bug_creation_time):
@@ -178,41 +181,148 @@ def run_a_model(max_number_of_bugs_to_find, max_number_of_commits_permissable,
                                  max_number_of_bugs_to_find,
                                  estack,
                                  times_of_bug_finds)
-        except ValueError:
+        except (ValueError, IndexError):
+            # index error in special case we deplete the bugs just as we
+            # are supposed to terminate
             break
         if time_is_exceeded:
             break
         # Move through rest of tstep to the point where the bug is created:
         current_time = bug_creation_time
 
-    plt.figure(1)
+    plt.figure('Bugs vs commits')
     plt.plot(times_of_bug_finds, list(range(len(times_of_bug_finds))))
     plt.ylabel('Total number of bugs')
     plt.xlabel('Time found')
-    plt.figure(2)
+    plt.figure('Wait times')
     plt.hist(np.diff(times_of_bug_finds), bins='auto')
     plt.xlabel('Interval between bug finds')
     plt.ylabel('Number of occurrences')
-    # plt.figure(3)
-    # # mock up our key data fig
-    # number_caught = np.searchsorted(times_of_bug_finds, time_elapsed)
-    # plt.plot(time_elapsed, number_caught / time_elapsed, 'x')
-    # plt.xlabel('Commits in repo')
-    # plt.ylabel('Apparent bug find rate')
 
     return times_of_bug_finds
 
 
-if __name__ == "__main__":
+def run_with_fixed_num_bugs(rates, start_bugs, num_realisations):
     doi_bug_commit_distn = np.loadtxt('doiorg_total_commits_for_each_repo.txt')
-    for rate in (0.0001, ):# (0.0001, 0.001, 0.01):
-        for num_start_bugs in (250, ):#(0, 50, 250):
-            for i in range(10):
+    out_dict = {}
+    for rate in rates:
+        out_dict[rate] = {}
+        for num_start_bugs in start_bugs:
+            out_dict[rate][num_start_bugs] = {}
+            out_dict[rate][num_start_bugs]['num_commits'] = []
+            out_dict[rate][num_start_bugs]['bug_rate'] = []
+            for i in range(num_realisations):
                 # draw a plausible repo length:
                 repo_len = np.random.choice(doi_bug_commit_distn)
                 # repo_len = 1000
-                run_a_model(10000, repo_len, rate, (10., 3.), num_start_bugs)
+                times_of_bug_finds = run_a_model(
+                    10000, repo_len, rate, (10., 3.), num_start_bugs
+                )
                 # (10,3) very approx for doi.org
+                # really big poss number of bugs to get the termination at
+                # time not bug count
                 # An early cutoff before repo len without reaching num_bugs
                 # indicates the model did not find more bugs in the remaining
                 # interval
+
+                number_caught = len(times_of_bug_finds)
+                bug_rate = number_caught / repo_len
+                out_dict[rate][num_start_bugs]['num_commits'].append(repo_len)
+                out_dict[rate][num_start_bugs]['bug_rate'].append(bug_rate)
+    return out_dict
+
+
+def run_with_exponential_num_bugs(rates, start_bug_exp_scales,
+                                  num_realisations):
+    doi_bug_commit_distn = np.loadtxt('doiorg_total_commits_for_each_repo.txt')
+    out_dict = {}
+    for rate in rates:
+        out_dict[rate] = {}
+        for exp_scale in start_bug_exp_scales:
+            out_dict[rate][exp_scale] = {}
+            out_dict[rate][exp_scale]['num_commits'] = []
+            out_dict[rate][exp_scale]['bug_rate'] = []
+            start_bugs = np.random.geometric(exp_scale,
+                                             num_realisations)
+            # geometric -> exponential discrete equivalent
+            for num_start_bugs in start_bugs:
+                # draw a plausible repo length:
+                repo_len = np.random.choice(doi_bug_commit_distn)
+                # repo_len = 1000
+                times_of_bug_finds = run_a_model(
+                    10000, repo_len, rate, (10., 3.), num_start_bugs
+                )
+                # (10,3) very approx for doi.org
+                # really big poss number of bugs to get the termination at
+                # time not bug count
+                # An early cutoff before repo len without reaching num_bugs
+                # indicates the model did not find more bugs in the remaining
+                # interval
+
+                number_caught = len(times_of_bug_finds)
+                bug_rate = number_caught / repo_len
+                out_dict[rate][exp_scale]['num_commits'].append(repo_len)
+                out_dict[rate][exp_scale]['bug_rate'].append(bug_rate)
+    return out_dict
+
+
+if __name__ == "__main__":
+    run_type = 'exp'  # {'fixed', 'exp'}
+    rates = (0.001, )  # (0.0001, 0.001, 0.01)
+    if run_type == 'fixed':
+        start_bugs = (1000, )  # (0, 50, 250)
+        out_dict = run_with_fixed_num_bugs(rates, start_bugs, 1000)
+        dict_keys = start_bugs
+    elif run_type == 'exp':
+        exp_scales = (0.005, 0.01, 0.02)
+        # rate = 0.001 scale ~0.5 gives interesting responses
+        # v little sensitivity to scale at the high end
+        # i.e., there needs to be a wide spread in poss number of bugs,
+        # i.e., up to hundreds of bugs, to get interesting responses
+        # by 0.1 we are dealing mostly w 10s of bugs only, depleted too fast
+        # in ALL runs.
+        out_dict = run_with_exponential_num_bugs(rates, exp_scales, 1000)
+        dict_keys = exp_scales
+    else:
+        raise NameError('run_type not recognised')
+
+    # now mock up figures
+    for rate in rates:
+        for k in dict_keys:
+            plt.figure(str(rate) + '_' + str(k))
+            num_commits = np.array(
+                out_dict[rate][k]['num_commits']
+            )
+            bug_rate = np.array(
+                out_dict[rate][k]['bug_rate']
+            )
+            plt.plot(num_commits, bug_rate, 'x')
+            plt.xlabel('Commits in repo')
+            plt.ylabel('Apparent bug find rate')
+
+            total_commits_order = np.argsort(num_commits)
+            total_commits_IN_order = num_commits[total_commits_order]
+            bug_find_rate_ordered = bug_rate[total_commits_order]
+            bug_find_rate_moving_avg = moving_average(bug_find_rate_ordered,
+                                                      n=20)
+            # # also a moving average excluding the rate = 0 cases
+            # # (=> is it just them causing the trend?)
+            # # plotting will show the trend is still there without zeros
+            # rate_not_zero = np.logical_not(np.isclose(bug_find_rate_ordered,
+            #                                           0.))
+            # bug_find_rate_moving_avg_no_zeros = moving_average(
+            #     bug_find_rate_ordered[rate_not_zero], n=20
+            # )
+            # commits_more_than_1 = total_commits_IN_order > 1
+            # bug_find_rate_moving_avg_not1commit = moving_average(
+            #     bug_find_rate_ordered[commits_more_than_1], n=20
+            # )
+            plt.plot(total_commits_IN_order[:-19],
+                     bug_find_rate_moving_avg, '-')
+
+            plt.figure('all_runs')
+            plt.plot(num_commits, bug_rate, 'x')
+            plt.plot(total_commits_IN_order[:-19],
+                     bug_find_rate_moving_avg, '-')
+            plt.xlabel('Commits in repo')
+            plt.ylabel('Apparent bug find rate')
