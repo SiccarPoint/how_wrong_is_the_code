@@ -1,12 +1,13 @@
 # remember to make an HTTPDigestAuth object!
 
-import requests, json, re, os, pandas, sqlite3, time, sqlalchemy
+import requests, json, re, os, pandas, sqlite3, time
 import numpy as np
 from matplotlib.pyplot import plot, figure, show, xlabel, ylabel, xlim, ylim, bar, hist
 from datetime import datetime
 from header.header import HEADER
 from requests.auth import HTTPDigestAuth
 from copy import copy
+from sqlalchemy.exc import OperationalError
 
 COUNT_ADDITIONS = True
 # This is a hardwired trigger as doing this makes it very likely we hit the
@@ -836,7 +837,7 @@ def cloc_repo(repo_nameowner):
     con = sqlite3.connect('repo_cloc.db')
     try:
         out = pandas.read_sql('SELECT * FROM t', con)
-    except (sqlalchemy.OperationalError):
+    except OperationalError:
         # some repos can have no table
         return {}
     os.system('rm repo_cloc.db')
