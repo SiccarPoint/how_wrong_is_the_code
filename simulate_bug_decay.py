@@ -202,7 +202,8 @@ def run_a_model(max_number_of_bugs_to_find, max_number_of_commits_permissable,
     return times_of_bug_finds
 
 
-def run_with_fixed_num_bugs(rates, start_bugs, num_realisations):
+def run_with_fixed_num_bugs(rates, start_bugs, num_realisations,
+                            generate_bug_params):
     doi_bug_commit_distn = np.loadtxt('doiorg_total_commits_for_each_repo.txt')
     out_dict = {}
     for rate in rates:
@@ -216,7 +217,7 @@ def run_with_fixed_num_bugs(rates, start_bugs, num_realisations):
                 repo_len = np.random.choice(doi_bug_commit_distn)
                 # repo_len = 1000
                 times_of_bug_finds = run_a_model(
-                    10000, repo_len, rate, (10., 3.), num_start_bugs
+                    10000, repo_len, rate, generate_bug_params, num_start_bugs
                 )
                 # (10,3) very approx for doi.org
                 # really big poss number of bugs to get the termination at
@@ -233,7 +234,7 @@ def run_with_fixed_num_bugs(rates, start_bugs, num_realisations):
 
 
 def run_with_exponential_num_bugs(rates, start_bug_exp_scales,
-                                  num_realisations):
+                                  num_realisations, generate_bug_params):
     doi_bug_commit_distn = np.loadtxt('doiorg_total_commits_for_each_repo.txt')
     out_dict = {}
     for rate in rates:
@@ -250,7 +251,7 @@ def run_with_exponential_num_bugs(rates, start_bug_exp_scales,
                 repo_len = np.random.choice(doi_bug_commit_distn)
                 # repo_len = 1000
                 times_of_bug_finds = run_a_model(
-                    10000, repo_len, rate, (10., 3.), num_start_bugs
+                    10000, repo_len, rate, generate_bug_params, num_start_bugs
                 )
                 # (10,3) very approx for doi.org
                 # really big poss number of bugs to get the termination at
@@ -268,20 +269,24 @@ def run_with_exponential_num_bugs(rates, start_bug_exp_scales,
 
 if __name__ == "__main__":
     run_type = 'exp'  # {'fixed', 'exp'}
-    rates = (0.001, )  # (0.0001, 0.001, 0.01)
+    rates = (0.0003, 0.001, 0.003)
     if run_type == 'fixed':
         start_bugs = (1000, )  # (0, 50, 250)
-        out_dict = run_with_fixed_num_bugs(rates, start_bugs, 1000)
+        out_dict = run_with_fixed_num_bugs(rates, start_bugs, 1000, (10., 3.))
         dict_keys = start_bugs
     elif run_type == 'exp':
-        exp_scales = (0.005, 0.01, 0.02)
-        # rate = 0.001 scale ~0.5 gives interesting responses
+        exp_scales = (0.1, 0.2)
+        # rate = 0.001 scale ~0.1-0.2 gives interesting responses around the
+        # sweet spot where no sensitivity transitions to fits that are
+        # sensitive but poor - but this param combo cannot give saturation by
+        # ~300 commits. Dropping helps, but then we lose good fit
         # v little sensitivity to scale at the high end
         # i.e., there needs to be a wide spread in poss number of bugs,
         # i.e., up to hundreds of bugs, to get interesting responses
         # by 0.1 we are dealing mostly w 10s of bugs only, depleted too fast
         # in ALL runs.
-        out_dict = run_with_exponential_num_bugs(rates, exp_scales, 1000)
+        out_dict = run_with_exponential_num_bugs(rates, exp_scales, 1000,
+                                                 (10., 3.))
         dict_keys = exp_scales
     else:
         raise NameError('run_type not recognised')
@@ -289,7 +294,8 @@ if __name__ == "__main__":
     # now mock up figures
     for rate in rates:
         for k in dict_keys:
-            plt.figure(str(rate) + '_' + str(k))
+            runname = str(rate) + '_' + str(k)
+            plt.figure(runname)
             num_commits = np.array(
                 out_dict[rate][k]['num_commits']
             )
@@ -321,8 +327,9 @@ if __name__ == "__main__":
                      bug_find_rate_moving_avg, '-')
 
             plt.figure('all_runs')
-            plt.plot(num_commits, bug_rate, 'x')
+            # plt.plot(num_commits, bug_rate, 'x')
             plt.plot(total_commits_IN_order[:-19],
-                     bug_find_rate_moving_avg, '-')
+                     bug_find_rate_moving_avg, '-', label=runname)
             plt.xlabel('Commits in repo')
             plt.ylabel('Apparent bug find rate')
+            plt.legend()

@@ -832,7 +832,7 @@ def cloc_repo(repo_nameowner):
     con = sqlite3.connect('repo_cloc.db')
     try:
         out = pandas.read_sql('SELECT * FROM t', con)
-    except (OperationalError, DatabaseError):
+    except (OperationalError, pandas.io.sql.DatabaseError):
         # some repos can have no table
         return {}
     os.system('rm repo_cloc.db')
