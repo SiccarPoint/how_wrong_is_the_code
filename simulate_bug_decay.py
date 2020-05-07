@@ -1,8 +1,14 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import pymc3 as pm
+import theano.tensor as T
+from theano import function
+from theano.tensor.shared_randomstreams import RandomStreams
 from bisect import insort
+from scipy.stats import geom
 from utils import moving_average
+
+SEED = np.random.randint(10000000)
 
 # assumption 1: bugs have a representative lifetime, measured somehow in
 # person-hrs spent on the code. i.e., bugs decay against some timescale.
@@ -269,19 +275,36 @@ def run_with_exponential_num_bugs(rates, start_bug_exp_scales,
     return out_dict
 
 
+def run_with_exponential_num_bugs_floats_in(r, s, b, num_realisations):
+    doi_bug_commit_distn = np.loadtxt('doiorg_total_commits_for_each_repo.txt')
+    start_bugs = np.random.geometric(s, num_realisations) - 1
+    repo_len = np.random.choice(doi_bug_commit_distn)
+    nums_caught = []
+    bug_rates = []
+    for num_start_bugs in start_bugs:
+        times_of_bug_finds = run_a_model(
+            10000, repo_len, r, (b, 1.), num_start_bugs
+        )
+        number_caught = len(times_of_bug_finds)
+        bug_rate = number_caught / repo_len
+        nums_caught.append(number_caught)
+        bug_rates.append(bug_rate)
+    return np.array(nums_caught, bug_rates)
+
+
 def run_exp_three_times_and_bin(r, s, b, n=1000):
     bin_intervals = np.loadtxt('real_data_bin_intervals.txt')
     bin_vals = [0., ] * (len(bin_intervals) - 1)
     bin_vals = np.array(bin_vals)
     for i in range(3):
-        out_dict = run_with_exponential_num_bugs(r, s, n, (b, 1.))
-        num_commits = np.array(out_dict[r][s]['num_commits'])
-        bug_rate = np.array(out_dict[r][s]['bug_rate'])
+        num_commits, bug_rate = run_with_exponential_num_bugs_floats_in(
+            r, s, b, n
+        )
         total_commits_order = np.argsort(num_commits)
         total_commits_IN_order = num_commits[total_commits_order]
         bug_find_rate_ordered = bug_rate[total_commits_order]
         bbase_index = 0
-        for en, btop in enum(bin_intervals[1:]):
+        for en, btop in enumerate(bin_intervals[1:]):
             btop_index = np.searchsorted(total_commits_IN_order, btop, 'right')
             bin_vals[en] += np.mean(
                 bug_find_rate_ordered[bbase_index:btop_index]
@@ -291,31 +314,72 @@ def run_exp_three_times_and_bin(r, s, b, n=1000):
     return bin_vals
 
 
-def mcmc_fitter(obs_data, n_samples):
+def my_loglike(theta):
+    """
+    A Gaussian log-likelihood function for a model with parameters given in
+    theta
+    """
+    sim_bins = run_exp_three_times_and_bin(theta)
+
+
+class theano_Op_wrapper(T.Op):  # -----> review this, should work w likelihood f, not data out
+    """
+    Specify what type of object will be passed and returned to the Op when it is
+    called. In our case we will be passing it a vector of values (the parameters
+    that define our model) and returning an array of the vals to compare.
+    """
+    itypes = [T.dvector] # expects a vector of parameter values when called
+    otypes = [T.dscalar] # outputs a single scalar value
+
+    def __init__(self, run_driver):
+        """
+        Initialise the Op with various things that our simulator function
+        requires.
+
+        Parameters
+        ----------
+        run_driver:
+            The func itself
+        """
+        self._runfunc = run_driver
+
+    def perform(self, node, inputs, outputs):
+        # the method that is used when calling the Op
+        theta, = inputs  # this will contain my variables
+
+        # call the func
+        out1 = self._runfunc(theta)
+
+        outputs[0][0] = np.array(out1)
+
+
+def mcmc_fitter(n_samples, n_burn):
     # attempts an MCMC fit to the data. Hard part is a sensible fit model.
     # Only sensible one is a binned model that lets us overcome the noise
     # near 0. Adding mean and std may help?
     # breaks at [0., 1., 2., 3., 4., 5., 7., 10., 20., 50., 100., 200., 1000000.]
-    # follows https://github.com/WillKoehrsen/ai-projects/blob/master/markov_chain_monte_carlo/markov_chain_monte_carlo.ipynb
+    # inspired by https://github.com/WillKoehrsen/ai-projects/blob/master/markov_chain_monte_carlo/markov_chain_monte_carlo.ipynb
+    # follows the black box approach of https://docs.pymc.io/notebooks/blackbox_external_likelihood.html
     real_data = np.loadtxt('real_data_count.txt')
 
-    r = pm.Uniform('r', 0., 0.1, testval=0.)
-    s = pm.Uniform('s', 0., 0.5, testval=0.)
-    b = pm.Uniform('b', 0., 30., testval=0.)
+    # make the black box Op model
+    bb_model = theano_Op_wrapper(run_exp_three_times_and_bin)
 
-    p = pm.Deterministic('p', run_exp_three_times_and_bin(r, s, b))
-    observed = pm.Bernoulli('obs', p, observed=obs_data)
-    step = pm.Metropolis()
+    with pm.Model() as model:
+        r = pm.Uniform('r', 0., 0.1, testval=0.)
+        s = pm.Uniform('s', 0., 0.5, testval=0.)
+        b = pm.Uniform('b', 0., 30., testval=0.)
 
-    data_trace = pm.sample(n_samples, step=step, njobs=2)
+        # convert these to a tensor variable
+        theta = T.as_tensor_variable([r, s, b])
 
-    r_samples = data_trace['r'][n_samples:, None]
-    s_samples = data_trace['s'][n_samples:, None]
-    b_samples = data_trace['b'][n_samples:, None]
+        # use a DensityDist (use a lambda func to call the Op)
+        pm.DensityDist('likelihood', lambda v: bb_model(v),
+                       observed={'v': theta})
 
-    return r_samples, s_samples, b_samples
+        trace = pm.sample(n_samples, tune=n_burn, discard_tuned_samples=True)
 
-
+    return trace
 
 
 if __name__ == "__main__":

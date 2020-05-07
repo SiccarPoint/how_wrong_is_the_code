@@ -842,6 +842,7 @@ def cloc_repo(repo_nameowner):
     """
     Takes a nameowner for a Github repo and returns a dict of scientific
     programming languages used and the number of lines of each.
+    Requires the command line tool cloc.
     """
     assert type(repo_nameowner) is str
     dict_language_to_codelines = {}
