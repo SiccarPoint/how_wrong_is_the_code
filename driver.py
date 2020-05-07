@@ -1,6 +1,6 @@
 # remember to make an HTTPDigestAuth object!
 
-import requests, json, re, os, pandas, sqlite3, time
+import requests, json, re, os, pandas, sqlite3, time, sqlalchemy
 import numpy as np
 from matplotlib.pyplot import plot, figure, show, xlabel, ylabel, xlim, ylim, bar, hist
 from datetime import datetime
@@ -681,6 +681,28 @@ def calc_event_rate(times_of_events):
     return rates, np.median(rates), np.mean(rates)
 
 
+def calc_averages_for_intervals(commits_in_order, bug_fraction_in_order):
+    """Calc the mean value of bug_fraction for the intervals
+    [0, 1, 2, 3, 4, 5, 6, 7, 8, 10, 14, 20, 28, 42, 90, 1000000]
+    (selected so once commits>4, each interval contains ~50 repos)
+    """
+    bin_intervals = np.array(
+        [0, 1, 2, 3, 4, 5, 6, 7, 8, 10, 14, 20, 28, 42, 90, 1000000]
+    )
+    bin_vals = []
+    bin_count = []
+    bbase_index = 0
+    for btop in bin_intervals[1:]:
+        btop_index = np.searchsorted(commits_in_order, btop, 'right')
+        bin_vals.append(np.mean(
+            bug_fraction_in_order[bbase_index:btop_index]
+        ))
+        bin_count.append(btop_index - bbase_index)
+        bbase_index = btop_index
+    return np.array(bin_vals), np.array(bin_count)
+
+
+
 def plot_commit_and_bug_rates(from_start_time, bug_from_start_time,
                               number_of_authors, additions,
                               highlight=False):
@@ -829,13 +851,28 @@ def cloc_repo(repo_nameowner):
     bashscript += 'cloc --sql 1 temp-linecount-repo | sqlite3 repo_cloc.db &&\n'
     bashscript += 'rm -rf temp-linecount-repo\n'
     os.system(bashscript)
-    con = sqlite3.connect('repo_cloc.db')
-    try:
-        out = pandas.read_sql('SELECT * FROM t', con)
-    except (OperationalError, pandas.io.sql.DatabaseError):
-        # some repos can have no table
+    # con = sqlite3.connect('repo_cloc.db')
+    # try:
+    #     out = pandas.read_sql('SELECT * FROM t', con)
+    # except (AttributeError, con.OperationalError, con.DatabaseError):
+    #     print('No table for', repo_nameowner)
+    #     os.system('rm repo_cloc.db')
+    #     return {}
+    # ^^ this creates unhandlable errors if no table, so use sqlalchemy direct:
+    engine = sqlalchemy.create_engine('sqlite:///repo_cloc.db')
+    if engine.has_table('t'):
+        print('Loading the table...')
+        out = pandas.read_sql('SELECT * FROM t', engine)
+    else:
+        print('No table for', repo_nameowner)
+        #os.system('rm repo_cloc.db')
+        os.remove('repo_cloc.db')
+        # some errors leave this in place so:
+        os.system('rm -rf temp-linecount-repo')
         return {}
-    os.system('rm repo_cloc.db')
+    #
+    #os.system('rm repo_cloc.db')
+    os.remove('repo_cloc.db')
     total_lines_of_code = out['nCode'].sum()
     for lang in LANGUAGES_TO_TEST_FOR:
         lines_in_lang = out['nCode'][out['Language'] == lang]
@@ -870,7 +907,7 @@ def repo_lengths_to_file(repo_nameowners):
 if __name__ == "__main__":
     topic = 'https://doi.org'  # 'landlab', 'terrainbento', 'physics', 'chemistry', 'https://doi.org', 'biolog'
     # the search for Landlab isn't pulling landlab/landlab as a long repo!? Check
-    search_type = 'tight'  # for how to pick bugs ('loose', 'tight', 'major')
+    search_type = 'loose'  # for how to pick bugs ('loose', 'tight', 'major')
     search_fresh = False
     continue_old_saves = True
     # ^If true, script begins by a fresh call to the API and then a save

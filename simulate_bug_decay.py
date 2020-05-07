@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import pymc3 as pm
 from bisect import insort
 from utils import moving_average
 
@@ -244,8 +245,9 @@ def run_with_exponential_num_bugs(rates, start_bug_exp_scales,
             out_dict[rate][exp_scale]['num_commits'] = []
             out_dict[rate][exp_scale]['bug_rate'] = []
             start_bugs = np.random.geometric(exp_scale,
-                                             num_realisations)
+                                             num_realisations) - 1
             # geometric -> exponential discrete equivalent
+            # -1 to start from 0 not 1
             for num_start_bugs in start_bugs:
                 # draw a plausible repo length:
                 repo_len = np.random.choice(doi_bug_commit_distn)
@@ -267,15 +269,64 @@ def run_with_exponential_num_bugs(rates, start_bug_exp_scales,
     return out_dict
 
 
+def run_exp_three_times_and_bin(r, s, b, n=1000):
+    bin_intervals = np.loadtxt('real_data_bin_intervals.txt')
+    bin_vals = [0., ] * (len(bin_intervals) - 1)
+    bin_vals = np.array(bin_vals)
+    for i in range(3):
+        out_dict = run_with_exponential_num_bugs(r, s, n, (b, 1.))
+        num_commits = np.array(out_dict[r][s]['num_commits'])
+        bug_rate = np.array(out_dict[r][s]['bug_rate'])
+        total_commits_order = np.argsort(num_commits)
+        total_commits_IN_order = num_commits[total_commits_order]
+        bug_find_rate_ordered = bug_rate[total_commits_order]
+        bbase_index = 0
+        for en, btop in enum(bin_intervals[1:]):
+            btop_index = np.searchsorted(total_commits_IN_order, btop, 'right')
+            bin_vals[en] += np.mean(
+                bug_find_rate_ordered[bbase_index:btop_index]
+            )
+            bbase_index = btop_index
+    bin_vals /= 3.
+    return bin_vals
+
+
+def mcmc_fitter(obs_data, n_samples):
+    # attempts an MCMC fit to the data. Hard part is a sensible fit model.
+    # Only sensible one is a binned model that lets us overcome the noise
+    # near 0. Adding mean and std may help?
+    # breaks at [0., 1., 2., 3., 4., 5., 7., 10., 20., 50., 100., 200., 1000000.]
+    # follows https://github.com/WillKoehrsen/ai-projects/blob/master/markov_chain_monte_carlo/markov_chain_monte_carlo.ipynb
+    real_data = np.loadtxt('real_data_count.txt')
+
+    r = pm.Uniform('r', 0., 0.1, testval=0.)
+    s = pm.Uniform('s', 0., 0.5, testval=0.)
+    b = pm.Uniform('b', 0., 30., testval=0.)
+
+    p = pm.Deterministic('p', run_exp_three_times_and_bin(r, s, b))
+    observed = pm.Bernoulli('obs', p, observed=obs_data)
+    step = pm.Metropolis()
+
+    data_trace = pm.sample(n_samples, step=step, njobs=2)
+
+    r_samples = data_trace['r'][n_samples:, None]
+    s_samples = data_trace['s'][n_samples:, None]
+    b_samples = data_trace['b'][n_samples:, None]
+
+    return r_samples, s_samples, b_samples
+
+
+
+
 if __name__ == "__main__":
     run_type = 'exp'  # {'fixed', 'exp'}
-    rates = (0.0003, 0.001, 0.003)
+    rates = (0.01, )# (0.0003, 0.001, 0.003)
     if run_type == 'fixed':
         start_bugs = (1000, )  # (0, 50, 250)
         out_dict = run_with_fixed_num_bugs(rates, start_bugs, 1000, (10., 3.))
         dict_keys = start_bugs
     elif run_type == 'exp':
-        exp_scales = (0.1, 0.2)
+        exp_scales = (0.2, )#(0.1, 0.2)
         # rate = 0.001 scale ~0.1-0.2 gives interesting responses around the
         # sweet spot where no sensitivity transitions to fits that are
         # sensitive but poor - but this param combo cannot give saturation by
@@ -286,7 +337,22 @@ if __name__ == "__main__":
         # by 0.1 we are dealing mostly w 10s of bugs only, depleted too fast
         # in ALL runs.
         out_dict = run_with_exponential_num_bugs(rates, exp_scales, 1000,
-                                                 (10., 3.))
+                                                 (7.5, 1.))
+        # can produce a pretty good version of the key plot with r=0.003,
+        # s=0.2, b=(10., 3.)... but it "levels out" at 0.04, not 0.1.
+        # So, drop b to get bigger number and then re-tune the others?
+        # r=0.01, s=0.2, b=(7.5, 1.) looks pretty great
+        # s~0.2 is ~10 bugs on commit
+        # Under these terms we have good s sensitivity! big s, i.e., no bugs
+        # at commit, creates a poor, linear fit with no rollover
+        # By s~0.2, we get a good roll, a tendency to bfr~0.1 at hi commits,
+        # and the noise close to 0 commits stays below 0.1.
+        # By s~0.1, retain nice rollover, stable bfr goes up slightly (0.12?)
+        # but the rollover happens sooner and the noise at zero is much bigger
+        # (0->0.2).
+        # Bottom line is that there is very nice sensitivity to all params
+        # available here
+        # We could also add the CDF to get another constraint
         dict_keys = exp_scales
     else:
         raise NameError('run_type not recognised')
