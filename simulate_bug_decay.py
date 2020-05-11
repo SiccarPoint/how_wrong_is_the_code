@@ -310,7 +310,7 @@ def run_exp_three_times_and_bin(theta, x, n=1000):
         the bin intervals, i.e., the dependent variable
     n =
     """
-    print('beginning a new model run...'')
+    print('beginning a new model run...')
     r, s, b = theta
     bin_vals = [0., ] * (len(x) - 1)
     bin_vals = np.array(bin_vals)
