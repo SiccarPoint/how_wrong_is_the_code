@@ -168,7 +168,7 @@ def run_a_model(max_number_of_bugs_to_find, max_number_of_commits_permissable,
     for i in range(number_of_starting_bugs):
         a_bug = bug(bug_lifetime_parameter, current_time,
                     variable_lifetime=variable_lifetime)
-        print("Adding bug, lifetime:", a_bug.lifetime)
+        # print("Adding bug, lifetime:", a_bug.lifetime)
         estack.add_a_bug(a_bug)
     # now run the model
     for time_from_now_to_bug_creation in generate_bug(generate_bug_params[0],
@@ -310,7 +310,6 @@ def run_exp_three_times_and_bin(theta, x, n=1000):
         the bin intervals, i.e., the dependent variable
     n =
     """
-    # bin_intervals = np.loadtxt('real_data_bin_intervals.txt')
     r, s, b = theta
     bin_vals = [0., ] * (len(x) - 1)
     bin_vals = np.array(bin_vals)
@@ -418,7 +417,8 @@ def mcmc_fitter(n_samples=5, n_burn=2):
         pm.DensityDist('likelihood', lambda v: log1(v),
                        observed={'v': theta})
 
-        trace = pm.sample(n_samples, tune=n_burn, discard_tuned_samples=True)
+        trace = pm.sample(n_samples, tune=n_burn, discard_tuned_samples=True,
+                          njobs=4)
 
     return trace
 
