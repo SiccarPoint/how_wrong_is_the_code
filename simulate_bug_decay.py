@@ -382,7 +382,7 @@ class theano_Op_wrapper(T.Op):
         outputs[0][0] = np.array(log1)
 
 
-def mcmc_fitter(n_samples=5, n_burn=2):
+def mcmc_fitter(n_samples=4, n_burn=1):
     """
     Run the MCMC model. Defaults represent a test run.
 
@@ -418,8 +418,7 @@ def mcmc_fitter(n_samples=5, n_burn=2):
         pm.DensityDist('likelihood', lambda v: log1(v),
                        observed={'v': theta})
 
-        trace = pm.sample(n_samples, tune=n_burn, discard_tuned_samples=True,
-                          njobs=4)
+        trace = pm.sample(n_samples, tune=n_burn, discard_tuned_samples=True)
 
     return trace
 
