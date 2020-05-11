@@ -140,7 +140,8 @@ class event_stack():
 
 def run_a_model(max_number_of_bugs_to_find, max_number_of_commits_permissable,
                 bug_lifetime_parameter,
-                generate_bug_params, number_of_starting_bugs):
+                generate_bug_params, number_of_starting_bugs,
+                plot_figs):
     """
     Here, the funcion runs until either the bug count reaches
     max_number_of_bugs_to_find, or the "time" exceeds
@@ -197,20 +198,21 @@ def run_a_model(max_number_of_bugs_to_find, max_number_of_commits_permissable,
         # Move through rest of tstep to the point where the bug is created:
         current_time = bug_creation_time
 
-    plt.figure('Bugs vs commits')
-    plt.plot(times_of_bug_finds, list(range(len(times_of_bug_finds))))
-    plt.ylabel('Total number of bugs')
-    plt.xlabel('Time found')
-    plt.figure('Wait times')
-    plt.hist(np.diff(times_of_bug_finds), bins='auto')
-    plt.xlabel('Interval between bug finds')
-    plt.ylabel('Number of occurrences')
+    if plot_figs:
+        plt.figure('Bugs vs commits')
+        plt.plot(times_of_bug_finds, list(range(len(times_of_bug_finds))))
+        plt.ylabel('Total number of bugs')
+        plt.xlabel('Time found')
+        plt.figure('Wait times')
+        plt.hist(np.diff(times_of_bug_finds), bins='auto')
+        plt.xlabel('Interval between bug finds')
+        plt.ylabel('Number of occurrences')
 
     return times_of_bug_finds
 
 
 def run_with_fixed_num_bugs(rates, start_bugs, num_realisations,
-                            generate_bug_params):
+                            generate_bug_params, plot_figs=False):
     doi_bug_commit_distn = np.loadtxt('doiorg_total_commits_for_each_repo.txt')
     out_dict = {}
     for rate in rates:
@@ -224,7 +226,8 @@ def run_with_fixed_num_bugs(rates, start_bugs, num_realisations,
                 repo_len = np.random.choice(doi_bug_commit_distn)
                 # repo_len = 1000
                 times_of_bug_finds = run_a_model(
-                    10000, repo_len, rate, generate_bug_params, num_start_bugs
+                    10000, repo_len, rate, generate_bug_params, num_start_bugs,
+                    plot_figs
                 )
                 # (10,3) very approx for doi.org
                 # really big poss number of bugs to get the termination at
@@ -241,7 +244,8 @@ def run_with_fixed_num_bugs(rates, start_bugs, num_realisations,
 
 
 def run_with_exponential_num_bugs(rates, start_bug_exp_scales,
-                                  num_realisations, generate_bug_params):
+                                  num_realisations, generate_bug_params,
+                                  plot_figs=False):
     doi_bug_commit_distn = np.loadtxt('doiorg_total_commits_for_each_repo.txt')
     out_dict = {}
     for rate in rates:
@@ -259,7 +263,8 @@ def run_with_exponential_num_bugs(rates, start_bug_exp_scales,
                 repo_len = np.random.choice(doi_bug_commit_distn)
                 # repo_len = 1000
                 times_of_bug_finds = run_a_model(
-                    10000, repo_len, rate, generate_bug_params, num_start_bugs
+                    10000, repo_len, rate, generate_bug_params, num_start_bugs,
+                    plot_figs
                 )
                 # (10,3) very approx for doi.org
                 # really big poss number of bugs to get the termination at
@@ -283,18 +288,31 @@ def run_with_exponential_num_bugs_floats_in(r, s, b, num_realisations):
     bug_rates = []
     for num_start_bugs in start_bugs:
         times_of_bug_finds = run_a_model(
-            10000, repo_len, r, (b, 1.), num_start_bugs
+            10000, repo_len, r, (b, 1.), num_start_bugs, plot_figs=False
         )
         number_caught = len(times_of_bug_finds)
         bug_rate = number_caught / repo_len
         nums_caught.append(number_caught)
         bug_rates.append(bug_rate)
-    return np.array(nums_caught, bug_rates)
+    return np.array(nums_caught), np.array(bug_rates)
 
 
-def run_exp_three_times_and_bin(r, s, b, n=1000):
-    bin_intervals = np.loadtxt('real_data_bin_intervals.txt')
-    bin_vals = [0., ] * (len(bin_intervals) - 1)
+def run_exp_three_times_and_bin(theta, x, n=1000):
+    """
+    Run the exponential form of the driver three times and report the binned
+    answer. This is in this form to enamble pymc3 functionality.
+
+    Parameters
+    ----------
+    theta :
+        iterable of the driving params, (r, s, b)
+    x :
+        the bin intervals, i.e., the dependent variable
+    n =
+    """
+    # bin_intervals = np.loadtxt('real_data_bin_intervals.txt')
+    r, s, b = theta
+    bin_vals = [0., ] * (len(x) - 1)
     bin_vals = np.array(bin_vals)
     for i in range(3):
         num_commits, bug_rate = run_with_exponential_num_bugs_floats_in(
@@ -304,7 +322,7 @@ def run_exp_three_times_and_bin(r, s, b, n=1000):
         total_commits_IN_order = num_commits[total_commits_order]
         bug_find_rate_ordered = bug_rate[total_commits_order]
         bbase_index = 0
-        for en, btop in enumerate(bin_intervals[1:]):
+        for en, btop in enumerate(x[1:]):
             btop_index = np.searchsorted(total_commits_IN_order, btop, 'right')
             bin_vals[en] += np.mean(
                 bug_find_rate_ordered[bbase_index:btop_index]
@@ -314,15 +332,17 @@ def run_exp_three_times_and_bin(r, s, b, n=1000):
     return bin_vals
 
 
-def my_loglike(theta):
+def my_loglike(theta, x, data, sigma):
     """
     A Gaussian log-likelihood function for a model with parameters given in
-    theta
+    theta.
     """
-    sim_bins = run_exp_three_times_and_bin(theta)
+    sim_bins = run_exp_three_times_and_bin(theta, x)
+
+    return -(0.5 / sigma ** 2) * np.sum((data - sim_bins) ** 2)
 
 
-class theano_Op_wrapper(T.Op):  # -----> review this, should work w likelihood f, not data out
+class theano_Op_wrapper(T.Op):
     """
     Specify what type of object will be passed and returned to the Op when it is
     called. In our case we will be passing it a vector of values (the parameters
@@ -331,29 +351,48 @@ class theano_Op_wrapper(T.Op):  # -----> review this, should work w likelihood f
     itypes = [T.dvector] # expects a vector of parameter values when called
     otypes = [T.dscalar] # outputs a single scalar value
 
-    def __init__(self, run_driver):
+    def __init__(self, loglike, data, x, sigma):
         """
         Initialise the Op with various things that our simulator function
         requires.
 
         Parameters
         ----------
-        run_driver:
-            The func itself
+        loglike :
+            The log-likelihood driver func
+        data :
+            The true data to match to
+        x :
+            A dummy
+        sigma :
+            The noise std that our function requires
         """
-        self._runfunc = run_driver
+        self._likelihood = loglike
+        self._data = data
+        self._x = x
+        self._sigma = sigma
 
     def perform(self, node, inputs, outputs):
         # the method that is used when calling the Op
         theta, = inputs  # this will contain my variables
 
         # call the func
-        out1 = self._runfunc(theta)
+        log1 = self._likelihood(theta, self._x, self._data, self._sigma)
 
-        outputs[0][0] = np.array(out1)
+        outputs[0][0] = np.array(log1)
 
 
-def mcmc_fitter(n_samples, n_burn):
+def mcmc_fitter(n_samples=5, n_burn=2):
+    """
+    Run the MCMC model. Defaults represent a test run.
+
+    Parameters:
+    -----------
+    n_samples : int
+        number of draws from the distribution
+    n_burn : int
+        number of "burn-in" points (which we'll discard)
+    """
     # attempts an MCMC fit to the data. Hard part is a sensible fit model.
     # Only sensible one is a binned model that lets us overcome the noise
     # near 0. Adding mean and std may help?
@@ -361,20 +400,22 @@ def mcmc_fitter(n_samples, n_burn):
     # inspired by https://github.com/WillKoehrsen/ai-projects/blob/master/markov_chain_monte_carlo/markov_chain_monte_carlo.ipynb
     # follows the black box approach of https://docs.pymc.io/notebooks/blackbox_external_likelihood.html
     real_data = np.loadtxt('real_data_count.txt')
+    bin_intervals = np.loadtxt('real_data_bin_intervals.txt')
+    sigma = 5.  # std of noise...??
 
     # make the black box Op model
-    bb_model = theano_Op_wrapper(run_exp_three_times_and_bin)
+    log1 = theano_Op_wrapper(my_loglike, real_data, bin_intervals, sigma)
 
     with pm.Model() as model:
-        r = pm.Uniform('r', 0., 0.1, testval=0.)
-        s = pm.Uniform('s', 0., 0.5, testval=0.)
-        b = pm.Uniform('b', 0., 30., testval=0.)
+        r = pm.Uniform('r', 0.00001, 0.1, testval=0.01)
+        s = pm.Uniform('s', 0.001, 0.5, testval=0.1)
+        b = pm.Uniform('b', 0.001, 30., testval=5.)
 
         # convert these to a tensor variable
         theta = T.as_tensor_variable([r, s, b])
 
         # use a DensityDist (use a lambda func to call the Op)
-        pm.DensityDist('likelihood', lambda v: bb_model(v),
+        pm.DensityDist('likelihood', lambda v: log1(v),
                        observed={'v': theta})
 
         trace = pm.sample(n_samples, tune=n_burn, discard_tuned_samples=True)
@@ -387,7 +428,8 @@ if __name__ == "__main__":
     rates = (0.01, )# (0.0003, 0.001, 0.003)
     if run_type == 'fixed':
         start_bugs = (1000, )  # (0, 50, 250)
-        out_dict = run_with_fixed_num_bugs(rates, start_bugs, 1000, (10., 3.))
+        out_dict = run_with_fixed_num_bugs(rates, start_bugs, 1000, (10., 3.)
+                                           plot_figs=True)
         dict_keys = start_bugs
     elif run_type == 'exp':
         exp_scales = (0.2, )#(0.1, 0.2)
@@ -401,7 +443,7 @@ if __name__ == "__main__":
         # by 0.1 we are dealing mostly w 10s of bugs only, depleted too fast
         # in ALL runs.
         out_dict = run_with_exponential_num_bugs(rates, exp_scales, 1000,
-                                                 (7.5, 1.))
+                                                 (7.5, 1.), plot_figs=True)
         # can produce a pretty good version of the key plot with r=0.003,
         # s=0.2, b=(10., 3.)... but it "levels out" at 0.04, not 0.1.
         # So, drop b to get bigger number and then re-tune the others?
