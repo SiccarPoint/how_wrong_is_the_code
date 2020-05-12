@@ -283,10 +283,10 @@ def run_with_exponential_num_bugs(rates, start_bug_exp_scales,
 def run_with_exponential_num_bugs_floats_in(r, s, b, num_realisations):
     doi_bug_commit_distn = np.loadtxt('doiorg_total_commits_for_each_repo.txt')
     start_bugs = np.random.geometric(s, num_realisations) - 1
-    repo_len = np.random.choice(doi_bug_commit_distn)
     nums_caught = []
     bug_rates = []
     for num_start_bugs in start_bugs:
+        repo_len = np.random.choice(doi_bug_commit_distn)
         times_of_bug_finds = run_a_model(
             10000, repo_len, r, (b, 1.), num_start_bugs, plot_figs=False
         )
@@ -308,7 +308,8 @@ def run_exp_three_times_and_bin(theta, x, n=1000):
         iterable of the driving params, (r, s, b)
     x :
         the bin intervals, i.e., the dependent variable
-    n =
+    n :
+        the number of model realisations to create (i.e. num repos to simulate)
     """
     print('beginning a new model run...')
     r, s, b = theta
@@ -324,11 +325,8 @@ def run_exp_three_times_and_bin(theta, x, n=1000):
         bbase_index = 0
         for en, btop in enumerate(x[1:]):
             btop_index = np.searchsorted(total_commits_IN_order, btop, 'right')
-            bin_vals[en] += np.mean(
-                bug_find_rate_ordered[bbase_index:btop_index]
-            )
+            bin_vals[en] += (btop_index - bbase_index) / 3.
             bbase_index = btop_index
-    bin_vals /= 3.
     return bin_vals
 
 
@@ -407,9 +405,9 @@ def mcmc_fitter(n_samples=4, n_burn=1):
     log1 = theano_Op_wrapper(my_loglike, real_data, bin_intervals, sigma)
 
     with pm.Model() as model:
-        r = pm.Uniform('r', 0.00001, 0.1, testval=0.01)
-        s = pm.Uniform('s', 0.001, 0.5, testval=0.1)
-        b = pm.Uniform('b', 0.001, 30., testval=5.)
+        r = pm.Uniform('r', 0.00001, 10., testval=0.01)
+        s = pm.Uniform('s', 0.001, 0.9, testval=0.1)
+        b = pm.Uniform('b', 0.001, 100., testval=5.)
 
         # convert these to a tensor variable
         theta = T.as_tensor_variable([r, s, b])
@@ -428,7 +426,7 @@ if __name__ == "__main__":
     rates = (0.01, )# (0.0003, 0.001, 0.003)
     if run_type == 'fixed':
         start_bugs = (1000, )  # (0, 50, 250)
-        out_dict = run_with_fixed_num_bugs(rates, start_bugs, 1000, (10., 3.)
+        out_dict = run_with_fixed_num_bugs(rates, start_bugs, 1000, (10., 3.),
                                            plot_figs=True)
         dict_keys = start_bugs
     elif run_type == 'exp':
