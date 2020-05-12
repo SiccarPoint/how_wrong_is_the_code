@@ -313,10 +313,12 @@ def run_exp_three_times_and_bin(theta, x, n=1000):
         the number of model realisations to create (i.e. num repos to simulate)
     """
     print('beginning a new model run...')
+    # for clarity, separate out the three
+    repeats = 3
     r, s, b = theta
     bin_vals = [0., ] * (len(x) - 1)
     bin_vals = np.array(bin_vals)
-    for i in range(3):
+    for i in range(repeats):
         num_commits, bug_rate = run_with_exponential_num_bugs_floats_in(
             r, s, b, n
         )
@@ -328,7 +330,7 @@ def run_exp_three_times_and_bin(theta, x, n=1000):
             btop_index = np.searchsorted(total_commits_IN_order, btop, 'right')
             bin_vals[en] += np.mean(
                 bug_find_rate_ordered[bbase_index:btop_index]
-            )
+            ) / repeats
             bbase_index = btop_index
     return bin_vals
 
@@ -475,7 +477,8 @@ def mcmc_fitter(n_samples=4, n_burn=1):
         pm.DensityDist('likelihood', lambda v: log1(v),
                        observed={'v': theta})
 
-        trace = pm.sample(n_samples, tune=n_burn, discard_tuned_samples=True)
+        trace = pm.sample(n_samples, tune=n_burn, discard_tuned_samples=True,
+                          cores=4)
 
     return trace
 
