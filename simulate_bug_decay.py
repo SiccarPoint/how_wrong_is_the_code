@@ -326,7 +326,9 @@ def run_exp_three_times_and_bin(theta, x, n=1000):
         bbase_index = 0
         for en, btop in enumerate(x[1:]):
             btop_index = np.searchsorted(total_commits_IN_order, btop, 'right')
-            bin_vals[en] += (btop_index - bbase_index) / 3.
+            bin_vals[en] += np.mean(
+                bug_find_rate_ordered[bbase_index:btop_index]
+            )
             bbase_index = btop_index
     return bin_vals
 
@@ -454,7 +456,7 @@ def mcmc_fitter(n_samples=4, n_burn=1):
     # breaks at [0., 1., 2., 3., 4., 5., 7., 10., 20., 50., 100., 200., 1000000.]
     # inspired by https://github.com/WillKoehrsen/ai-projects/blob/master/markov_chain_monte_carlo/markov_chain_monte_carlo.ipynb
     # follows the black box approach of https://docs.pymc.io/notebooks/blackbox_external_likelihood.html
-    real_data = np.loadtxt('real_data_count.txt')
+    real_data = np.loadtxt('real_data_bin_means.txt')
     bin_intervals = np.loadtxt('real_data_bin_intervals.txt')
     sigma = 5.  # std of noise...??
 

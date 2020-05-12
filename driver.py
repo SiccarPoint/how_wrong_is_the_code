@@ -1199,6 +1199,28 @@ if __name__ == "__main__":
     xlabel('Total number of commits')
     ylabel('Fraction of all commits finding bugs')
 
+    # for output, build the bug find rates in each of our total commits
+    # intervals so we have a target dataset for an MCMC approach (see
+    # simulate_bug_decay.py) to target:
+    commit_count_intervals = np.loadtxt('real_data_bin_intervals.txt')
+    # these intervals begin as one per commit (1, 2, 3, ...) then space out
+    # such that we have ~~50 commits in each interval once the frequency falls
+    # this far for the ints.
+    bin_count = [0., ] * (len(commit_count_intervals) - 1)
+    bin_count = np.array(bin_count)
+    bin_vals = [0., ] * (len(commit_count_intervals) - 1)
+    bin_vals = np.array(bin_vals)
+    bbase_index = 0
+    for en, btop in enumerate(commit_count_intervals[1:]):
+        btop_index = np.searchsorted(total_commits_IN_order, btop, 'right')
+        bin_count[en] = btop_index - bbase_index
+        bin_vals[en] = np.mean(
+            bug_find_rate_ordered[bbase_index:btop_index]
+        )
+        bbase_index = btop_index
+    np.savetxt('real_data_counts.txt', bin_count)
+    np.savetxt('real_data_bin_means.txt', bin_vals)
+
     figure('bug rate per line vs cumulative lines')
     plot(total_lines_from_API, bug_find_rate_per_line, 'x')
 
