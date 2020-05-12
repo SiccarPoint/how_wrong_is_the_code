@@ -7,6 +7,7 @@ from theano.tensor.shared_randomstreams import RandomStreams
 from bisect import insort
 from scipy.stats import geom
 from utils import moving_average
+from find_grads import gradients  # ensure to run python setup.py install
 
 SEED = np.random.randint(10000000)
 
@@ -361,7 +362,7 @@ class theano_Op_wrapper(T.Op):
         data :
             The true data to match to
         x :
-            A dummy
+            The dependent variable (aka 'x') that our model requires
         sigma :
             The noise std that our function requires
         """
@@ -369,6 +370,11 @@ class theano_Op_wrapper(T.Op):
         self._data = data
         self._x = x
         self._sigma = sigma
+
+        # initialise the gradient Op (below)
+        self._logpgrad = LogLikeGrad(
+            self._likelihood, self._data, self._x, self._sigma
+        )
 
     def perform(self, node, inputs, outputs):
         # the method that is used when calling the Op
@@ -378,6 +384,57 @@ class theano_Op_wrapper(T.Op):
         log1 = self._likelihood(theta, self._x, self._data, self._sigma)
 
         outputs[0][0] = np.array(log1)
+
+    def grad(self, inputs, g):
+        # the method that calculates the gradients - it actually returns the
+        # vector-Jacobian product - g[0] is a vector of parameter values
+        theta, = inputs  # our parameters
+        return [g[0] * self._logpgrad(theta)]
+
+
+class LogLikeGrad(T.Op):
+
+    """
+    This Op will be called with a vector of values and also return a vector of
+    values - the gradients in each dimension.
+    """
+    itypes = [T.dvector]
+    otypes = [T.dvector]
+
+    def __init__(self, loglike, data, x, sigma):
+        """
+        Initialise with various things that the function requires. Below
+        are the things that are needed in this particular example.
+
+        Parameters
+        ----------
+        loglike:
+            The log-likelihood (or whatever) function we've defined
+        data:
+            The "observed" data that our log-likelihood function takes in
+        x:
+            The dependent variable (aka 'x') that our model requires
+        sigma:
+            The noise standard deviation that out function requires.
+        """
+
+        # add inputs as class attributes
+        self._likelihood = loglike
+        self._data = data
+        self._x = x
+        self._sigma = sigma
+
+    def perform(self, node, inputs, outputs):
+        theta, = inputs
+
+        # define version of likelihood function to pass to derivative function
+        def lnlike(values):
+            return self._likelihood(values, self._x, self._data, self._sigma)
+
+        # calculate gradients
+        grads = gradients(theta, lnlike)
+
+        outputs[0][0] = grads
 
 
 def mcmc_fitter(n_samples=4, n_burn=1):
@@ -405,8 +462,8 @@ def mcmc_fitter(n_samples=4, n_burn=1):
     log1 = theano_Op_wrapper(my_loglike, real_data, bin_intervals, sigma)
 
     with pm.Model() as model:
-        r = pm.Uniform('r', 0.00001, 10., testval=0.01)
-        s = pm.Uniform('s', 0.001, 0.9, testval=0.1)
+        r = pm.Uniform('r', 0.00001, 1., testval=0.01)
+        s = pm.Uniform('s', 0.001, 0.5, testval=0.1)
         b = pm.Uniform('b', 0.001, 100., testval=5.)
 
         # convert these to a tensor variable
