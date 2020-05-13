@@ -1220,6 +1220,11 @@ if __name__ == "__main__":
         bbase_index = btop_index
     np.savetxt('real_data_counts.txt', bin_count)
     np.savetxt('real_data_bin_means.txt', bin_vals)
+    # ...and save the actual x, y
+    np.savetxt('all_real_data_num_bugs.txt',
+               bug_find_rate_ordered * total_commits_IN_order)
+    np.savetxt('all_real_data_total_commits.txt',
+               total_commits_IN_order)
 
     figure('bug rate per line vs cumulative lines')
     plot(total_lines_from_API, bug_find_rate_per_line, 'x')
