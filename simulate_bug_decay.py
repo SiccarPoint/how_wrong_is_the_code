@@ -8,6 +8,7 @@ from bisect import insort
 from scipy.stats import geom
 from utils import moving_average
 from find_grads import gradients  # ensure to run python setup.py install
+from driver import moving_average
 
 SEED = np.random.randint(10000000)
 
@@ -406,19 +407,21 @@ def statistical_model():
     # # priors
     all_real_data = np.loadtxt('all_real_data_num_bugs.txt')
     all_commits = np.loadtxt('all_real_data_total_commits.txt')
+    # all_real_data = np.loadtxt('real_data_bin_means.txt')
+    # all_commits = np.loadtxt('real_data_bin_intervals.txt')
+    # all_commits = (all_commits[:-1] + all_commits[1:])/2
     # at a given ncommits, the observed bugs should be a BINOMIAL distb, as
     # we are counting observations in a yes/no system
     # We are also explicitly dealing with SURVIVAL FUNCS, specifically exp
     # as argued here, but arguably also Weibull with a decreasing chance of
     # bug finding (i.e., superexponential, "Lindy func").
+    total_bugs_moving_avg = moving_average(all_real_data, n=20)
 
     with pm.Model() as model_bugs:
         commits = pm.Data('commits', all_commits)
         # Now set up the crucial unknowns - those for the starting bug popn
-        #K = pm.Uniform('K', 0., 1000., testval=10.)
-        #S = pm.Uniform('S', 0.000001, 10., testval=0.1)
-        #N0 = pm.Deterministic('N0', K * T.exp(-S))
-        N0 = pm.Exponential('N0', 0.1, testval=10.)
+        S = pm.Uniform('S', 0.000001, 10., testval=0.1)
+        N0 = pm.Exponential('N0', S)
         # R = pm.Normal('R', mu=0.2, sigma=0.05)  # generation rate AKA A
         # F = pm.Normal('F', mu=0.2, sigma=0.05)  # find rate
         R = pm.Uniform('R', 0.000001, 1., testval=0.01)  # generation rate AKA A
@@ -428,7 +431,7 @@ def statistical_model():
         # N_startsurvivors = N0 * T.exp(-F * commits)
         # which means the bug count goes as
         N_found_startpopn = pm.Deterministic(
-            'N_found_startpopn', N0.random(1000) * (1. - T.exp(-F * commits))
+            'N_found_startpopn', N0.random(size=len(all_commits)) * (1. - T.exp(-F * commits))
         )
 
         # now, we generate bugs as we go. So,

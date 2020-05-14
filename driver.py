@@ -1222,7 +1222,9 @@ if __name__ == "__main__":
     np.savetxt('real_data_bin_means.txt', bin_vals)
     # ...and save the actual x, y
     np.savetxt('all_real_data_num_bugs.txt',
-               bug_find_rate_ordered * total_commits_IN_order)
+               np.array(total_bugs_per_repo)[total_commits_order])
+    np.savetxt('all_real_data_bug_find_rate.txt',
+               bug_find_rate_ordered)
     np.savetxt('all_real_data_total_commits.txt',
                total_commits_IN_order)
 
