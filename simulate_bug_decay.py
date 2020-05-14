@@ -27,11 +27,27 @@ def generate_bug(generation_rate, rate_std):
     Assumes the std is small compared to the rate.
 
     These rates are equivalent to R.
-    """
 
+    Examples
+    --------
+    >>> intervals = np.empty(1000, dtype=float)
+    >>> for en, i in enumerate(generate_bug(0.1, 0.001)):
+    ...     try:
+    ...         intervals[en] = i
+    ...     except IndexError:
+    ...         break
+    >>> np.isclose(intervals.mean(), 10., atol=0.01)
+    True
+    >>> np.isclose(intervals.std(), 10. / 100., atol=0.01)
+    True
+    """
+    # deal with the std:
+    ivl_mean = 1./generation_rate
+    rel_std = rate_std / generation_rate
+    ivl_std = rel_std * ivl_mean
     while 1:
         ivl = np.clip(np.random.normal(
-                          loc=1./generation_rate, scale=1./rate_std
+                          loc=ivl_mean, scale=ivl_std
                       ),
                       a_min=0., a_max=None)
         yield ivl
@@ -132,7 +148,7 @@ class event_stack():
 
 
 def run_a_model(max_number_of_bugs_to_find, max_number_of_commits_permissable,
-                F, R, N0,
+                F, R_params, N0,
                 plot_figs):
     """
     Here, the funcion runs until either the bug count reaches
@@ -162,7 +178,7 @@ def run_a_model(max_number_of_bugs_to_find, max_number_of_commits_permissable,
         # print("Adding bug, lifetime:", a_bug.lifetime)
         estack.add_a_bug(a_bug)
     # now run the model
-    for time_from_now_to_bug_creation in generate_bug(R[0], R[1]):
+    for time_from_now_to_bug_creation in generate_bug(R_params[0], R_params[1]):
         # prepare the next bug to be added:
         bug_creation_time = current_time + time_from_now_to_bug_creation
         if bug_creation_time > max_number_of_commits_permissable:
@@ -210,6 +226,7 @@ def run_with_fixed_num_bugs(F_list, N0_list, num_realisations,
             out_dict[rate][num_start_bugs] = {}
             out_dict[rate][num_start_bugs]['num_commits'] = []
             out_dict[rate][num_start_bugs]['bug_rate'] = []
+            out_dict[rate][num_start_bugs]['total_bugs'] = []
             for i in range(num_realisations):
                 # draw a plausible repo length:
                 repo_len = np.random.choice(doi_bug_commit_distn)
@@ -229,6 +246,9 @@ def run_with_fixed_num_bugs(F_list, N0_list, num_realisations,
                 bug_rate = number_caught / repo_len
                 out_dict[rate][num_start_bugs]['num_commits'].append(repo_len)
                 out_dict[rate][num_start_bugs]['bug_rate'].append(bug_rate)
+                out_dict[rate][num_start_bugs]['total_bugs'].append(
+                    number_caught
+                )
     return out_dict
 
 
@@ -244,8 +264,7 @@ def run_with_exponential_num_bugs(F_list, S_list,
             out_dict[rate][exp_scale]['num_commits'] = []
             out_dict[rate][exp_scale]['bug_rate'] = []
             out_dict[rate][exp_scale]['total_bugs'] = []
-            start_bugs = np.random.geometric(exp_scale,
-                                             num_realisations) - 1
+            start_bugs = np.random.geometric(exp_scale, num_realisations) - 1
             # geometric -> exponential discrete equivalent
             # -1 to start from 0 not 1
             for num_start_bugs in start_bugs:
@@ -480,17 +499,17 @@ def mcmc_fitter(n_samples=4, n_burn=1):
 
 
 if __name__ == "__main__":
-    run_type = 'fixed'  # {'fixed', 'exp'}
+    run_type = 'exp'  # {'fixed', 'exp'}
     F_list = (0.019, )
     R = 0.053
     R_std = 0.0013
     if run_type == 'fixed':
-        start_bugs = (0, 10, 100)  # (0, 50, 250)
+        start_bugs = (10, )  # (0, 50, 250)
         out_dict = run_with_fixed_num_bugs(F_list, start_bugs, 1000, (R, R_std),
                                            plot_figs=True)
         dict_keys = start_bugs
     elif run_type == 'exp':
-        S_list = (0.2, )#(0.1, 0.2)
+        S_list = (0.1, 0.2, 0.3)#(0.1, 0.2)
         # rate = 0.001 scale ~0.1-0.2 gives interesting responses around the
         # sweet spot where no sensitivity transitions to fits that are
         # sensitive but poor - but this param combo cannot give saturation by
@@ -501,7 +520,8 @@ if __name__ == "__main__":
         # by 0.1 we are dealing mostly w 10s of bugs only, depleted too fast
         # in ALL runs.
         out_dict = run_with_exponential_num_bugs(F_list, S_list, 1000,
-                                                 (R, R_std), plot_figs=True)
+                                                 (R, R_std),
+                                                 plot_figs=True)
         # can produce a pretty good version of the key plot with r=0.003,
         # s=0.2, b=(10., 3.)... but it "levels out" at 0.04, not 0.1.
         # So, drop b to get bigger number and then re-tune the others?
@@ -522,12 +542,16 @@ if __name__ == "__main__":
         raise NameError('run_type not recognised')
 
     # now mock up figures
-    plt.figure('all_runs_total_bugs')
     observed_commits = np.loadtxt('all_real_data_total_commits.txt')
     observed_total_bugs_ordered = np.loadtxt('all_real_data_num_bugs.txt')
+    observed_bfr_ordered = np.loadtxt('all_real_data_bug_find_rate.txt')
+    plt.figure('all_runs_total_bugs')
     observed_total_bugs_movingavg = moving_average(observed_total_bugs_ordered,
                                                    n=20)
     plt.plot(observed_commits[:-19], observed_total_bugs_movingavg, 'k-')
+    plt.figure('all_runs_find_rates')
+    observed_bfr_movingavg = moving_average(observed_bfr_ordered, n=20)
+    plt.plot(observed_commits[:-19], observed_bfr_movingavg, 'k-')
     for F in F_list:
         for k in dict_keys:
             runname = str(F) + '_' + str(k)
