@@ -501,15 +501,15 @@ def mcmc_fitter(n_samples=4, n_burn=1):
 if __name__ == "__main__":
     run_type = 'exp'  # {'fixed', 'exp'}
     F_list = (0.019, )
-    R = 0.053
-    R_std = 0.0013
+    R = 0.053 * 2
+    R_std = 0.0013 * 2
     if run_type == 'fixed':
         start_bugs = (10, )  # (0, 50, 250)
         out_dict = run_with_fixed_num_bugs(F_list, start_bugs, 1000, (R, R_std),
                                            plot_figs=True)
         dict_keys = start_bugs
     elif run_type == 'exp':
-        S_list = (0.1, 0.2, 0.3)#(0.1, 0.2)
+        S_list = (0.5, 0.6, 1.)#(0.1, 0.2)
         # rate = 0.001 scale ~0.1-0.2 gives interesting responses around the
         # sweet spot where no sensitivity transitions to fits that are
         # sensitive but poor - but this param combo cannot give saturation by
@@ -542,16 +542,6 @@ if __name__ == "__main__":
         raise NameError('run_type not recognised')
 
     # now mock up figures
-    observed_commits = np.loadtxt('all_real_data_total_commits.txt')
-    observed_total_bugs_ordered = np.loadtxt('all_real_data_num_bugs.txt')
-    observed_bfr_ordered = np.loadtxt('all_real_data_bug_find_rate.txt')
-    plt.figure('all_runs_total_bugs')
-    observed_total_bugs_movingavg = moving_average(observed_total_bugs_ordered,
-                                                   n=20)
-    plt.plot(observed_commits[:-19], observed_total_bugs_movingavg, 'k-')
-    plt.figure('all_runs_find_rates')
-    observed_bfr_movingavg = moving_average(observed_bfr_ordered, n=20)
-    plt.plot(observed_commits[:-19], observed_bfr_movingavg, 'k-')
     for F in F_list:
         for k in dict_keys:
             runname = str(F) + '_' + str(k)
@@ -605,3 +595,13 @@ if __name__ == "__main__":
             plt.xlabel('Commits in repo')
             plt.ylabel('Total number of bugs')
             plt.legend()
+    observed_commits = np.loadtxt('all_real_data_total_commits.txt')
+    observed_total_bugs_ordered = np.loadtxt('all_real_data_num_bugs.txt')
+    observed_bfr_ordered = np.loadtxt('all_real_data_bug_find_rate.txt')
+    plt.figure('all_runs_total_bugs')
+    observed_total_bugs_movingavg = moving_average(observed_total_bugs_ordered,
+                                                   n=20)
+    plt.plot(observed_commits[:-19], observed_total_bugs_movingavg, 'k-')
+    plt.figure('all_runs_find_rates')
+    observed_bfr_movingavg = moving_average(observed_bfr_ordered, n=20)
+    plt.plot(observed_commits[:-19], observed_bfr_movingavg, 'k-')
