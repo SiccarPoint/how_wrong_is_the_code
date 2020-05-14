@@ -12,27 +12,18 @@ from driver import moving_average
 
 SEED = np.random.randint(10000000)
 
-# This version seeks to harmonise the numerical model with the stat treatment
-
 # assumption 1: bugs have a representative lifetime, measured somehow in
 # person-hrs spent on the code. i.e., bugs decay against some timescale.
 # assumption 2: bugs differ in how hard they are to spot. i.e., the decay
 # chance for our bugs is also exponentially distributed.
 # assumption 3: there is some fraction of changes to the code that have bugs
 
-def generate_bug(generation_rate, rate_std):
-    """Yields time to generate the next bug. Normally distributed about a mean.
+def generate_bug(mean=22., std=6.):
+    """Time to generate the next bug. Normally distributed about a mean.
     Defaults are for physics. Creates infinite series.
-
-    Assumes the std is small compared to the rate.
-
-    These rates are equivalent to R.
     """
-
     while 1:
-        ivl = np.clip(np.random.normal(
-                          loc=1./generation_rate, scale=1./rate_std
-                      ),
+        ivl = np.clip(np.random.normal(loc=mean, scale=std),
                       a_min=0., a_max=None)
         yield ivl
 
@@ -58,24 +49,42 @@ def advance_finding_bugs(current_time, bug_creation_time,
 
 
 class bug():
-    def __init__(self, lifetime_parameter, creation_time):
+    def __init__(self, lifetime_parameter, creation_time,
+                 variable_lifetime=True):
         """
         Parameters
         ----------
         lifetime_parameter : float
-            The decay constant of the bug, i.e., F.
+            If variable_lifetime, the decay constant of the exponential
+            distribution that describes the actual decay constant of this bug
+            (i.e., sets this bug's difficulty of finding).
+            If not variable_lifetime, this is the decay constant of the bug.
         creation_time : float
             Current clock time.
+        variable_lifetime : bool
+            If True (default), the decay parameter of this bug is itself
+            exponentially distributed according to lifetime_parameter.
+            If False, the decay parameter is fixed.
         """
         for ip in (lifetime_parameter, creation_time):
             assert type(ip) in (np.float64, float, int)
+        assert type(variable_lifetime) is bool
         self._lifetime = None
         self._decay_constant = None
         self._decay_time = None
         self._lifetime_parameter = lifetime_parameter
         self._creation_time = creation_time
-        self.assign_bug_lifetime(lifetime_parameter)
+        if variable_lifetime:
+            self.assign_decay_constant(lifetime_parameter)
+        else:
+            self._decay_constant = lifetime_parameter
+        self.assign_bug_lifetime(self._decay_constant)
         self._decay_time = self.calc_time_of_decay(creation_time)
+
+    def assign_decay_constant(self, lifetime_parameter):
+        self._decay_constant = 1. / np.random.exponential(
+            scale=1./lifetime_parameter
+        )
 
     def assign_bug_lifetime(self, decay_constant):
         self._lifetime = np.random.exponential(scale=1./decay_constant)
@@ -132,7 +141,8 @@ class event_stack():
 
 
 def run_a_model(max_number_of_bugs_to_find, max_number_of_commits_permissable,
-                F, R, N0,
+                bug_lifetime_parameter,
+                generate_bug_params, number_of_starting_bugs,
                 plot_figs):
     """
     Here, the funcion runs until either the bug count reaches
@@ -157,19 +167,22 @@ def run_a_model(max_number_of_bugs_to_find, max_number_of_commits_permissable,
     time_is_exceeded = False
 
     # set up the initial bugs:
-    for i in range(N0):
-        a_bug = bug(F, current_time)
+    for i in range(number_of_starting_bugs):
+        a_bug = bug(bug_lifetime_parameter, current_time,
+                    variable_lifetime=variable_lifetime)
         # print("Adding bug, lifetime:", a_bug.lifetime)
         estack.add_a_bug(a_bug)
     # now run the model
-    for time_from_now_to_bug_creation in generate_bug(R[0], R[1]):
+    for time_from_now_to_bug_creation in generate_bug(generate_bug_params[0],
+                                                      generate_bug_params[1]):
         # prepare the next bug to be added:
         bug_creation_time = current_time + time_from_now_to_bug_creation
         if bug_creation_time > max_number_of_commits_permissable:
             bug_creation_time = max_number_of_commits_permissable
             time_is_exceeded = True
         else:
-            a_bug = bug(F, bug_creation_time)
+            a_bug = bug(bug_lifetime_parameter, bug_creation_time,
+                        variable_lifetime=variable_lifetime)
             # add it
             estack.add_a_bug(a_bug)
         # now advance, finding bugs, until we need to generate a new bug:
@@ -200,13 +213,13 @@ def run_a_model(max_number_of_bugs_to_find, max_number_of_commits_permissable,
     return times_of_bug_finds
 
 
-def run_with_fixed_num_bugs(F_list, N0_list, num_realisations,
+def run_with_fixed_num_bugs(rates, start_bugs, num_realisations,
                             generate_bug_params, plot_figs=False):
     doi_bug_commit_distn = np.loadtxt('doiorg_total_commits_for_each_repo.txt')
     out_dict = {}
-    for rate in F_list:
+    for rate in rates:
         out_dict[rate] = {}
-        for num_start_bugs in N0_list:
+        for num_start_bugs in start_bugs:
             out_dict[rate][num_start_bugs] = {}
             out_dict[rate][num_start_bugs]['num_commits'] = []
             out_dict[rate][num_start_bugs]['bug_rate'] = []
@@ -232,14 +245,14 @@ def run_with_fixed_num_bugs(F_list, N0_list, num_realisations,
     return out_dict
 
 
-def run_with_exponential_num_bugs(F_list, S_list,
+def run_with_exponential_num_bugs(rates, start_bug_exp_scales,
                                   num_realisations, generate_bug_params,
                                   plot_figs=False):
     doi_bug_commit_distn = np.loadtxt('doiorg_total_commits_for_each_repo.txt')
     out_dict = {}
-    for rate in F_list:
+    for rate in rates:
         out_dict[rate] = {}
-        for exp_scale in S_list:
+        for exp_scale in start_bug_exp_scales:
             out_dict[rate][exp_scale] = {}
             out_dict[rate][exp_scale]['num_commits'] = []
             out_dict[rate][exp_scale]['bug_rate'] = []
@@ -269,15 +282,15 @@ def run_with_exponential_num_bugs(F_list, S_list,
     return out_dict
 
 
-def run_with_exponential_num_bugs_floats_in(R, S, F, num_realisations):
+def run_with_exponential_num_bugs_floats_in(r, s, b, num_realisations):
     doi_bug_commit_distn = np.loadtxt('doiorg_total_commits_for_each_repo.txt')
-    start_bugs = np.random.geometric(S, num_realisations) - 1
+    start_bugs = np.random.geometric(s, num_realisations) - 1
     nums_caught = []
     bug_rates = []
     for num_start_bugs in start_bugs:
         repo_len = np.random.choice(doi_bug_commit_distn)
         times_of_bug_finds = run_a_model(
-            10000, repo_len, F, (R, R*0.1), num_start_bugs, plot_figs=False
+            10000, repo_len, r, (b, 1.), num_start_bugs, plot_figs=False
         )
         number_caught = len(times_of_bug_finds)
         bug_rate = number_caught / repo_len
@@ -294,7 +307,7 @@ def run_exp_three_times_and_bin(theta, x, n=1000):
     Parameters
     ----------
     theta :
-        iterable of the driving params, (R, S, F)
+        iterable of the driving params, (r, s, b)
     x :
         the bin intervals, i.e., the dependent variable
     n :
@@ -303,12 +316,12 @@ def run_exp_three_times_and_bin(theta, x, n=1000):
     print('beginning a new model run...')
     # for clarity, separate out the three
     repeats = 3
-    r, s, f = theta
+    r, s, b = theta
     bin_vals = [0., ] * (len(x) - 1)
     bin_vals = np.array(bin_vals)
     for i in range(repeats):
         num_commits, bug_rate = run_with_exponential_num_bugs_floats_in(
-            r, s, f, n
+            r, s, b, n
         )
         total_commits_order = np.argsort(num_commits)
         total_commits_IN_order = num_commits[total_commits_order]
@@ -462,10 +475,10 @@ def mcmc_fitter(n_samples=4, n_burn=1):
     with pm.Model() as model:
         r = pm.Uniform('r', 0.00001, 1., testval=0.01)
         s = pm.Uniform('s', 0.001, 0.5, testval=0.1)
-        f = pm.Uniform('f', 0.001, 100., testval=5.)
+        b = pm.Uniform('b', 0.001, 100., testval=5.)
 
         # convert these to a tensor variable
-        theta = T.as_tensor_variable([r, s, f])
+        theta = T.as_tensor_variable([r, s, b])
 
         # use a DensityDist (use a lambda func to call the Op)
         pm.DensityDist('likelihood', lambda v: log1(v),
@@ -478,17 +491,15 @@ def mcmc_fitter(n_samples=4, n_burn=1):
 
 
 if __name__ == "__main__":
-    run_type = 'fixed'  # {'fixed', 'exp'}
-    F_list = (0.019, )
-    R = 0.053
-    R_std = 0.0013
+    run_type = 'exp'  # {'fixed', 'exp'}
+    rates = (0.01, )# (0.0003, 0.001, 0.003)
     if run_type == 'fixed':
-        start_bugs = (100, )  # (0, 50, 250)
-        out_dict = run_with_fixed_num_bugs(F_list, start_bugs, 1000, (R, R_std),
+        start_bugs = (1000, )  # (0, 50, 250)
+        out_dict = run_with_fixed_num_bugs(rates, start_bugs, 1000, (10., 3.),
                                            plot_figs=True)
         dict_keys = start_bugs
     elif run_type == 'exp':
-        S_list = (0.2, )#(0.1, 0.2)
+        exp_scales = (0.2, )#(0.1, 0.2)
         # rate = 0.001 scale ~0.1-0.2 gives interesting responses around the
         # sweet spot where no sensitivity transitions to fits that are
         # sensitive but poor - but this param combo cannot give saturation by
@@ -498,8 +509,8 @@ if __name__ == "__main__":
         # i.e., up to hundreds of bugs, to get interesting responses
         # by 0.1 we are dealing mostly w 10s of bugs only, depleted too fast
         # in ALL runs.
-        out_dict = run_with_exponential_num_bugs(F_list, S_list, 1000,
-                                                 (R, R_std), plot_figs=True)
+        out_dict = run_with_exponential_num_bugs(rates, exp_scales, 1000,
+                                                 (7.5, 1.), plot_figs=True)
         # can produce a pretty good version of the key plot with r=0.003,
         # s=0.2, b=(10., 3.)... but it "levels out" at 0.04, not 0.1.
         # So, drop b to get bigger number and then re-tune the others?
@@ -515,20 +526,20 @@ if __name__ == "__main__":
         # Bottom line is that there is very nice sensitivity to all params
         # available here
         # We could also add the CDF to get another constraint
-        dict_keys = S_list
+        dict_keys = exp_scales
     else:
         raise NameError('run_type not recognised')
 
     # now mock up figures
-    for F in F_list:
+    for rate in rates:
         for k in dict_keys:
-            runname = str(F) + '_' + str(k)
+            runname = str(rate) + '_' + str(k)
             plt.figure(runname)
             num_commits = np.array(
-                out_dict[F][k]['num_commits']
+                out_dict[rate][k]['num_commits']
             )
             bug_rate = np.array(
-                out_dict[F][k]['bug_rate']
+                out_dict[rate][k]['bug_rate']
             )
             plt.plot(num_commits, bug_rate, 'x')
             plt.xlabel('Commits in repo')
