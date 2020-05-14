@@ -243,6 +243,7 @@ def run_with_exponential_num_bugs(F_list, S_list,
             out_dict[rate][exp_scale] = {}
             out_dict[rate][exp_scale]['num_commits'] = []
             out_dict[rate][exp_scale]['bug_rate'] = []
+            out_dict[rate][exp_scale]['total_bugs'] = []
             start_bugs = np.random.geometric(exp_scale,
                                              num_realisations) - 1
             # geometric -> exponential discrete equivalent
@@ -266,6 +267,7 @@ def run_with_exponential_num_bugs(F_list, S_list,
                 bug_rate = number_caught / repo_len
                 out_dict[rate][exp_scale]['num_commits'].append(repo_len)
                 out_dict[rate][exp_scale]['bug_rate'].append(bug_rate)
+                out_dict[rate][exp_scale]['total_bugs'].append(number_caught)
     return out_dict
 
 
@@ -483,7 +485,7 @@ if __name__ == "__main__":
     R = 0.053
     R_std = 0.0013
     if run_type == 'fixed':
-        start_bugs = (100, )  # (0, 50, 250)
+        start_bugs = (0, 10, 100)  # (0, 50, 250)
         out_dict = run_with_fixed_num_bugs(F_list, start_bugs, 1000, (R, R_std),
                                            plot_figs=True)
         dict_keys = start_bugs
@@ -520,6 +522,12 @@ if __name__ == "__main__":
         raise NameError('run_type not recognised')
 
     # now mock up figures
+    plt.figure('all_runs_total_bugs')
+    observed_commits = np.loadtxt('all_real_data_total_commits.txt')
+    observed_total_bugs_ordered = np.loadtxt('all_real_data_num_bugs.txt')
+    observed_total_bugs_movingavg = moving_average(observed_total_bugs_ordered,
+                                                   n=20)
+    plt.plot(observed_commits[:-19], observed_total_bugs_movingavg, 'k-')
     for F in F_list:
         for k in dict_keys:
             runname = str(F) + '_' + str(k)
@@ -530,6 +538,9 @@ if __name__ == "__main__":
             bug_rate = np.array(
                 out_dict[F][k]['bug_rate']
             )
+            total_bugs = np.array(
+                out_dict[F][k]['total_bugs']
+            )
             plt.plot(num_commits, bug_rate, 'x')
             plt.xlabel('Commits in repo')
             plt.ylabel('Apparent bug find rate')
@@ -539,6 +550,8 @@ if __name__ == "__main__":
             bug_find_rate_ordered = bug_rate[total_commits_order]
             bug_find_rate_moving_avg = moving_average(bug_find_rate_ordered,
                                                       n=20)
+            total_bugs_ordered = total_bugs[total_commits_order]
+            total_bugs_moving_avg = moving_average(total_bugs_ordered, n=20)
             # # also a moving average excluding the rate = 0 cases
             # # (=> is it just them causing the trend?)
             # # plotting will show the trend is still there without zeros
@@ -554,10 +567,17 @@ if __name__ == "__main__":
             plt.plot(total_commits_IN_order[:-19],
                      bug_find_rate_moving_avg, '-')
 
-            plt.figure('all_runs')
+            plt.figure('all_runs_find_rates')
             # plt.plot(num_commits, bug_rate, 'x')
             plt.plot(total_commits_IN_order[:-19],
                      bug_find_rate_moving_avg, '-', label=runname)
             plt.xlabel('Commits in repo')
             plt.ylabel('Apparent bug find rate')
+            plt.legend()
+            plt.figure('all_runs_total_bugs')
+            # plt.plot(num_commits, bug_rate, 'x')
+            plt.plot(total_commits_IN_order[:-19],
+                     total_bugs_moving_avg, '-', label=runname)
+            plt.xlabel('Commits in repo')
+            plt.ylabel('Total number of bugs')
             plt.legend()
