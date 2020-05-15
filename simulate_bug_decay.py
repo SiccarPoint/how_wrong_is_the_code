@@ -20,7 +20,6 @@ SEED = np.random.randint(10000000)
 # chance for our bugs is also exponentially distributed.
 # assumption 3: there is some fraction of changes to the code that have bugs
 
-def generate_bug(generation_rate, rate_std):
 def generate_bug(generation_rate, rate_std, stochastic=True):
     """Yields time to generate the next bug. Normally distributed about a mean.
     Defaults are for physics. Creates infinite series.
