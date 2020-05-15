@@ -256,39 +256,43 @@ def run_with_fixed_num_bugs(F_list, N0_list, num_realisations,
                             plot_figs=False):
     doi_bug_commit_distn = np.loadtxt('doiorg_total_commits_for_each_repo.txt')
     out_dict = {}
-    for rate in F_list:
-        out_dict[rate] = {}
-        for num_start_bugs in N0_list:
-            out_dict[rate][num_start_bugs] = {}
-            out_dict[rate][num_start_bugs]['num_commits'] = []
-            out_dict[rate][num_start_bugs]['bug_rate'] = []
-            out_dict[rate][num_start_bugs]['total_bugs'] = []
-            out_dict[rate][num_start_bugs]['bugs_remaining'] = []
-            for i in range(num_realisations):
-                # draw a plausible repo length:
-                repo_len = np.random.choice(doi_bug_commit_distn)
-                # repo_len = 1000
-                times_of_bug_finds, bugs_remaining = run_a_model(
-                    10000, repo_len, rate, generate_bug_params, num_start_bugs,
-                    stochastic, plot_figs
-                )
-                # (10,3) very approx for doi.org
-                # really big poss number of bugs to get the termination at
-                # time not bug count
-                # An early cutoff before repo len without reaching num_bugs
-                # indicates the model did not find more bugs in the remaining
-                # interval
+    for F in F_list:
+        out_dict[F] = {}
+        for (R, R_std) in generate_bug_params:
+            out_dict[F][R] = {}
+            for num_start_bugs in N0_list:
+                out_dict[F][R][num_start_bugs] = {}
+                out_dict[F][R][num_start_bugs]['num_commits'] = []
+                out_dict[F][R][num_start_bugs]['bug_rate'] = []
+                out_dict[F][R][num_start_bugs]['total_bugs'] = []
+                out_dict[F][R][num_start_bugs]['bugs_remaining'] = []
+                for i in range(num_realisations):
+                    # draw a plausible repo length:
+                    repo_len = np.random.choice(doi_bug_commit_distn)
+                    # repo_len = 1000
+                    times_of_bug_finds, bugs_remaining = run_a_model(
+                        10000, repo_len, F, (R, R_std), num_start_bugs,
+                        stochastic, plot_figs
+                    )
+                    # (10,3) very approx for doi.org
+                    # really big poss number of bugs to get the termination at
+                    # time not bug count
+                    # An early cutoff before repo len without reaching num_bugs
+                    # indicates the model did not find more bugs in the remaining
+                    # interval
 
-                number_caught = len(times_of_bug_finds)
-                bug_rate = number_caught / repo_len
-                out_dict[rate][num_start_bugs]['num_commits'].append(repo_len)
-                out_dict[rate][num_start_bugs]['bug_rate'].append(bug_rate)
-                out_dict[rate][num_start_bugs]['total_bugs'].append(
-                    number_caught
-                )
-                out_dict[rate][num_start_bugs]['bugs_remaining'].append(
-                    bugs_remaining
-                )
+                    number_caught = len(times_of_bug_finds)
+                    bug_rate = number_caught / repo_len
+                    out_dict[F][R][num_start_bugs]['num_commits'].append(
+                        repo_len
+                    )
+                    out_dict[F][R][num_start_bugs]['bug_rate'].append(bug_rate)
+                    out_dict[F][R][num_start_bugs]['total_bugs'].append(
+                        number_caught
+                    )
+                    out_dict[F][R][num_start_bugs]['bugs_remaining'].append(
+                        bugs_remaining
+                    )
     return out_dict
 
 
@@ -301,47 +305,49 @@ def run_with_exponential_num_bugs(F_list, S_list,
     """
     doi_bug_commit_distn = np.loadtxt('doiorg_total_commits_for_each_repo.txt')
     out_dict = {}
-    for rate in F_list:
-        out_dict[rate] = {}
-        for exp_scale in S_list:
-            out_dict[rate][exp_scale] = {}
-            out_dict[rate][exp_scale]['num_commits'] = []
-            out_dict[rate][exp_scale]['bug_rate'] = []
-            out_dict[rate][exp_scale]['total_bugs'] = []
-            out_dict[rate][exp_scale]['bugs_remaining'] = []
-            if stochastic:
-                start_bugs = np.random.geometric(exp_scale,
-                                                 num_realisations) - 1
-            else:
-                ppf_pts = np.linspace(0., 1., num_realisations,
-                                      endpoint=False) + 0.000000001
-                # add a small float because strictly ppf(0) = 0
-                start_bugs = geom(exp_scale).ppf(ppf_pts).astype(int) - 1
-            # geometric -> exponential discrete equivalent
-            # -1 to start from 0 not 1
-            for num_start_bugs in start_bugs:
-                # draw a plausible repo length:
-                repo_len = np.random.choice(doi_bug_commit_distn)
-                # repo_len = 1000
-                times_of_bug_finds, bugs_remaining = run_a_model(
-                    10000, repo_len, rate, generate_bug_params, num_start_bugs,
-                    stochastic, plot_figs
-                )
-                # (10,3) very approx for doi.org
-                # really big poss number of bugs to get the termination at
-                # time not bug count
-                # An early cutoff before repo len without reaching num_bugs
-                # indicates the model did not find more bugs in the remaining
-                # interval
+    for F in F_list:
+        out_dict[F] = {}
+        for (R, R_std) in generate_bug_params:
+            out_dict[F][R] = {}
+            for exp_scale in S_list:
+                out_dict[F][R][exp_scale] = {}
+                out_dict[F][R][exp_scale]['num_commits'] = []
+                out_dict[F][R][exp_scale]['bug_rate'] = []
+                out_dict[F][R][exp_scale]['total_bugs'] = []
+                out_dict[F][R][exp_scale]['bugs_remaining'] = []
+                if stochastic:
+                    start_bugs = np.random.geometric(exp_scale,
+                                                     num_realisations) - 1
+                else:
+                    ppf_pts = np.linspace(0., 1., num_realisations,
+                                          endpoint=False) + 0.000000001
+                    # add a small float because strictly ppf(0) = 0
+                    start_bugs = geom(exp_scale).ppf(ppf_pts).astype(int) - 1
+                # geometric -> exponential discrete equivalent
+                # -1 to start from 0 not 1
+                for num_start_bugs in start_bugs:
+                    # draw a plausible repo length:
+                    repo_len = np.random.choice(doi_bug_commit_distn)
+                    # repo_len = 1000
+                    times_of_bug_finds, bugs_remaining = run_a_model(
+                        10000, repo_len, F, (R, R_std), num_start_bugs,
+                        stochastic, plot_figs
+                    )
+                    # (10,3) very approx for doi.org
+                    # really big poss number of bugs to get the termination at
+                    # time not bug count
+                    # An early cutoff before repo len without reaching num_bugs
+                    # indicates the model did not find more bugs in the remaining
+                    # interval
 
-                number_caught = len(times_of_bug_finds)
-                bug_rate = number_caught / repo_len
-                out_dict[rate][exp_scale]['num_commits'].append(repo_len)
-                out_dict[rate][exp_scale]['bug_rate'].append(bug_rate)
-                out_dict[rate][exp_scale]['total_bugs'].append(number_caught)
-                out_dict[rate][exp_scale]['bugs_remaining'].append(
-                    bugs_remaining
-                )
+                    number_caught = len(times_of_bug_finds)
+                    bug_rate = number_caught / repo_len
+                    out_dict[F][R][exp_scale]['num_commits'].append(repo_len)
+                    out_dict[F][R][exp_scale]['bug_rate'].append(bug_rate)
+                    out_dict[F][R][exp_scale]['total_bugs'].append(number_caught)
+                    out_dict[F][R][exp_scale]['bugs_remaining'].append(
+                        bugs_remaining
+                    )
     return out_dict
 
 
@@ -567,13 +573,17 @@ if __name__ == "__main__":
     F_list = (0.019, )
     R = 0.053 * 2.
     R_std = 0.0013 * 2
+    R_list = ((R, R_std), )
+    # F_list = np.linspace(0., 1., 20)
+    # Rs_in = np.linspace(0., 1., 20)
     if run_type == 'fixed':
-        start_bugs = (0, 1, 2, 5, 10, 20, 50)  # (0, 50, 250)
-        out_dict = run_with_fixed_num_bugs(F_list, start_bugs, 1000, (R, R_std),
+        start_bugs = (0, )#(0, 1, 2, 5, 10, 20, 50)
+        out_dict = run_with_fixed_num_bugs(F_list, start_bugs, 1000, R_list,
                                            stochastic, plot_figs=True)
         dict_keys = start_bugs
     elif run_type == 'exp':
         S_list = (0.5, 0.6)
+        # S_list = (0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.)
         # rate = 0.001 scale ~0.1-0.2 gives interesting responses around the
         # sweet spot where no sensitivity transitions to fits that are
         # sensitive but poor - but this param combo cannot give saturation by
@@ -584,7 +594,7 @@ if __name__ == "__main__":
         # by 0.1 we are dealing mostly w 10s of bugs only, depleted too fast
         # in ALL runs.
         out_dict = run_with_exponential_num_bugs(F_list, S_list, 1000,
-                                                 (R, R_std), stochastic,
+                                                 R_list, stochastic,
                                                  plot_figs=True)
         # can produce a pretty good version of the key plot with r=0.003,
         # s=0.2, b=(10., 3.)... but it "levels out" at 0.04, not 0.1.
@@ -607,70 +617,77 @@ if __name__ == "__main__":
 
     # now mock up figures
     for F in F_list:
-        for k in dict_keys:
-            runname = str(F) + '_' + str(k)
-            plt.figure(runname)
-            num_commits = np.array(
-                out_dict[F][k]['num_commits']
-            )
-            bug_rate = np.array(
-                out_dict[F][k]['bug_rate']
-            )
-            total_bugs = np.array(
-                out_dict[F][k]['total_bugs']
-            )
-            total_survivors = np.array(
-                out_dict[F][k]['bugs_remaining']
-            )
-            plt.plot(num_commits, bug_rate, 'x')
-            plt.xlabel('Commits in repo')
-            plt.ylabel('Apparent bug find rate')
+        for (R, R_std) in R_list:
+            for k in dict_keys:
+                runname = str(F) + '_' + str(R) + '_' + str(k)
+                plt.figure(runname)
+                num_commits = np.array(
+                    out_dict[F][R][k]['num_commits']
+                )
+                bug_rate = np.array(
+                    out_dict[F][R][k]['bug_rate']
+                )
+                total_bugs = np.array(
+                    out_dict[F][R][k]['total_bugs']
+                )
+                total_survivors = np.array(
+                    out_dict[F][R][k]['bugs_remaining']
+                )
+                plt.plot(num_commits, bug_rate, 'x')
+                plt.xlabel('Commits in repo')
+                plt.ylabel('Apparent bug find rate')
 
-            total_commits_order = np.argsort(num_commits)
-            total_commits_IN_order = num_commits[total_commits_order]
-            bug_find_rate_ordered = bug_rate[total_commits_order]
-            bug_find_rate_moving_avg = moving_average(bug_find_rate_ordered,
-                                                      n=20)
-            total_bugs_ordered = total_bugs[total_commits_order]
-            total_bugs_moving_avg = moving_average(total_bugs_ordered, n=20)
-            # # also a moving average excluding the rate = 0 cases
-            # # (=> is it just them causing the trend?)
-            # # plotting will show the trend is still there without zeros
-            # rate_not_zero = np.logical_not(np.isclose(bug_find_rate_ordered,
-            #                                           0.))
-            # bug_find_rate_moving_avg_no_zeros = moving_average(
-            #     bug_find_rate_ordered[rate_not_zero], n=20
-            # )
-            # commits_more_than_1 = total_commits_IN_order > 1
-            # bug_find_rate_moving_avg_not1commit = moving_average(
-            #     bug_find_rate_ordered[commits_more_than_1], n=20
-            # )
-            plt.plot(total_commits_IN_order[:-19],
-                     bug_find_rate_moving_avg, '-')
+                total_commits_order = np.argsort(num_commits)
+                total_commits_IN_order = num_commits[total_commits_order]
+                bug_find_rate_ordered = bug_rate[total_commits_order]
+                bug_find_rate_moving_avg = moving_average(bug_find_rate_ordered,
+                                                          n=20)
+                total_bugs_ordered = total_bugs[total_commits_order]
+                total_bugs_moving_avg = moving_average(total_bugs_ordered, n=20)
+                # # also a moving average excluding the rate = 0 cases
+                # # (=> is it just them causing the trend?)
+                # # plotting will show the trend is still there without zeros
+                # rate_not_zero = np.logical_not(np.isclose(bug_find_rate_ordered,
+                #                                           0.))
+                # bug_find_rate_moving_avg_no_zeros = moving_average(
+                #     bug_find_rate_ordered[rate_not_zero], n=20
+                # )
+                # commits_more_than_1 = total_commits_IN_order > 1
+                # bug_find_rate_moving_avg_not1commit = moving_average(
+                #     bug_find_rate_ordered[commits_more_than_1], n=20
+                # )
+                plt.plot(total_commits_IN_order[:-19],
+                         bug_find_rate_moving_avg, '-')
 
-            plt.figure('all_runs_find_rates')
-            # plt.plot(num_commits, bug_rate, 'x')
-            plt.plot(total_commits_IN_order[:-19],
-                     bug_find_rate_moving_avg, '-', label=runname)
-            plt.xlabel('Commits in repo')
-            plt.ylabel('Apparent bug find rate')
-            plt.legend()
-            plt.figure('all_runs_total_bugs')
-            # plt.plot(num_commits, bug_rate, 'x')
-            plt.plot(total_commits_IN_order[:-19],
-                     total_bugs_moving_avg, '-', label=runname)
-            plt.xlabel('Commits in repo')
-            plt.ylabel('Total number of bugs')
-            plt.legend()
-            plt.figure('Bugs_remaining_in_repo')
-            plt.plot(num_commits, total_survivors, 'x', label=runname)
-            plt.xlabel('Commits in repo')
-            plt.ylabel('Bugs remaining in repo')
-            plt.legend()
-            plt.figure('Bugs_remaining_in_repo_hist')
-            plt.hist(total_survivors, histtype='step', label=runname)
-            plt.xlabel('Bugs remaining in repo')
-            plt.legend()
+                plt.figure('all_runs_find_rates')
+                # plt.plot(num_commits, bug_rate, 'x')
+                plt.plot(total_commits_IN_order[:-19],
+                         bug_find_rate_moving_avg, '-', label=runname)
+                plt.xlabel('Commits in repo')
+                plt.ylabel('Apparent bug find rate')
+                plt.legend()
+                plt.figure('all_runs_total_bugs')
+                # plt.plot(num_commits, bug_rate, 'x')
+                plt.plot(total_commits_IN_order[:-19],
+                         total_bugs_moving_avg, '-', label=runname)
+                plt.xlabel('Commits in repo')
+                plt.ylabel('Total number of bugs')
+                plt.legend()
+                plt.figure('Bugs_remaining_in_repo')
+                plt.plot(num_commits, total_survivors, 'x', label=runname)
+                plt.xlabel('Commits in repo')
+                plt.ylabel('Bugs remaining in repo')
+                plt.legend()
+                plt.figure('Bugs_remaining_in_repo_hist')
+                plt.hist(total_survivors, histtype='step', label=runname)
+                plt.xlabel('Bugs remaining in repo')
+                plt.legend()
+                print(runname, 'mean number of bugs surviving:',
+                      total_survivors.mean())
+                # now for CI, (assume CLT, n>>130)
+                # http://amsi.org.au/ESA_Senior_Years/SeniorTopic4/4h/4h_2content_11.html
+                print(runname, '95% confidence',
+                      1.96 * total_survivors.std() / np.sqrt(total_survivors.size))
 
     observed_commits = np.loadtxt('all_real_data_total_commits.txt')
     observed_total_bugs_ordered = np.loadtxt('all_real_data_num_bugs.txt')
@@ -682,3 +699,10 @@ if __name__ == "__main__":
     plt.figure('all_runs_find_rates')
     observed_bfr_movingavg = moving_average(observed_bfr_ordered, n=20)
     plt.plot(observed_commits[:-19], observed_bfr_movingavg, 'k-')
+
+    for F in F_list:
+        for (R, R_std) in R_list:
+            for k in dict_keys:
+                runname = str(F) + '_' + str(R) + '_' + str(k)
+                plt.figure(runname)
+                plt.plot(observed_commits[:-19], observed_bfr_movingavg, 'k-')
