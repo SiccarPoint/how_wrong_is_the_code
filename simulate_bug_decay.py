@@ -21,6 +21,7 @@ SEED = np.random.randint(10000000)
 # assumption 3: there is some fraction of changes to the code that have bugs
 
 def generate_bug(generation_rate, rate_std):
+def generate_bug(generation_rate, rate_std, stochastic=True):
     """Yields time to generate the next bug. Normally distributed about a mean.
     Defaults are for physics. Creates infinite series.
 
@@ -45,13 +46,16 @@ def generate_bug(generation_rate, rate_std):
     ivl_mean = 1./generation_rate
     rel_std = rate_std / generation_rate
     ivl_std = rel_std * ivl_mean
-    while 1:
-        ivl = np.clip(np.random.normal(
-                          loc=ivl_mean, scale=ivl_std
-                      ),
-                      a_min=0., a_max=None)
-        yield ivl
-
+    if stochastic:
+        while 1:
+            ivl = np.clip(np.random.normal(
+                              loc=ivl_mean, scale=ivl_std
+                          ),
+                          a_min=0., a_max=None)
+            yield ivl
+    else:
+        while 1:
+            yield ivl_mean
 
 def advance_finding_bugs(current_time, bug_creation_time,
                          max_total_number_of_bugs_to_find,
@@ -74,7 +78,7 @@ def advance_finding_bugs(current_time, bug_creation_time,
 
 
 class bug():
-    def __init__(self, lifetime_parameter, creation_time):
+    def __init__(self, lifetime_parameter, creation_time, stochastic=True):
         """
         Parameters
         ----------
@@ -82,9 +86,14 @@ class bug():
             The decay constant of the bug, i.e., F.
         creation_time : float
             Current clock time.
+        stochastic : bool
+            If True, model operates stochastically (i.e., "true" behaviour).
+            If False, decay is NOT random and the lifetime of a bug is fixed.
+            This is useful for seeing the stable model response.
         """
         for ip in (lifetime_parameter, creation_time):
             assert type(ip) in (np.float64, float, int)
+        self._stochastic = stochastic
         self._lifetime = None
         self._decay_constant = None
         self._decay_time = None
@@ -94,7 +103,10 @@ class bug():
         self._decay_time = self.calc_time_of_decay(creation_time)
 
     def assign_bug_lifetime(self, decay_constant):
-        self._lifetime = np.random.exponential(scale=1./decay_constant)
+        if self._stochastic:
+            self._lifetime = np.random.exponential(scale=1./decay_constant)
+        else:
+            self._lifetime = 1./decay_constant
 
     def calc_time_of_decay(self, creation_time):
         return creation_time + self._lifetime
@@ -148,8 +160,7 @@ class event_stack():
 
 
 def run_a_model(max_number_of_bugs_to_find, max_number_of_commits_permissable,
-                F, R_params, N0,
-                plot_figs):
+                F, R_params, N0, stochastic=True, plot_figs=False):
     """
     Here, the funcion runs until either the bug count reaches
     max_number_of_bugs_to_find, or the "time" exceeds
@@ -174,18 +185,19 @@ def run_a_model(max_number_of_bugs_to_find, max_number_of_commits_permissable,
 
     # set up the initial bugs:
     for i in range(N0):
-        a_bug = bug(F, current_time)
+        a_bug = bug(F, current_time, stochastic=stochastic)
         # print("Adding bug, lifetime:", a_bug.lifetime)
         estack.add_a_bug(a_bug)
     # now run the model
-    for time_from_now_to_bug_creation in generate_bug(R_params[0], R_params[1]):
+    for time_from_now_to_bug_creation in generate_bug(R_params[0], R_params[1],
+                                                      stochastic=stochastic):
         # prepare the next bug to be added:
         bug_creation_time = current_time + time_from_now_to_bug_creation
         if bug_creation_time > max_number_of_commits_permissable:
             bug_creation_time = max_number_of_commits_permissable
             time_is_exceeded = True
         else:
-            a_bug = bug(F, bug_creation_time)
+            a_bug = bug(F, bug_creation_time, stochastic=stochastic)
             # add it
             estack.add_a_bug(a_bug)
         # now advance, finding bugs, until we need to generate a new bug:
@@ -217,7 +229,8 @@ def run_a_model(max_number_of_bugs_to_find, max_number_of_commits_permissable,
 
 
 def run_with_fixed_num_bugs(F_list, N0_list, num_realisations,
-                            generate_bug_params, plot_figs=False):
+                            generate_bug_params, stochastic=True,
+                            plot_figs=False):
     doi_bug_commit_distn = np.loadtxt('doiorg_total_commits_for_each_repo.txt')
     out_dict = {}
     for rate in F_list:
@@ -233,7 +246,7 @@ def run_with_fixed_num_bugs(F_list, N0_list, num_realisations,
                 # repo_len = 1000
                 times_of_bug_finds = run_a_model(
                     10000, repo_len, rate, generate_bug_params, num_start_bugs,
-                    plot_figs
+                    stochastic, plot_figs
                 )
                 # (10,3) very approx for doi.org
                 # really big poss number of bugs to get the termination at
@@ -254,7 +267,11 @@ def run_with_fixed_num_bugs(F_list, N0_list, num_realisations,
 
 def run_with_exponential_num_bugs(F_list, S_list,
                                   num_realisations, generate_bug_params,
-                                  plot_figs=False):
+                                  stochastic=True, plot_figs=False):
+    """
+    Note here "stochastic" only controls R & F; the N0 scaling remains
+    probabilistic, as this is the point of this function.
+    """
     doi_bug_commit_distn = np.loadtxt('doiorg_total_commits_for_each_repo.txt')
     out_dict = {}
     for rate in F_list:
@@ -273,7 +290,7 @@ def run_with_exponential_num_bugs(F_list, S_list,
                 # repo_len = 1000
                 times_of_bug_finds = run_a_model(
                     10000, repo_len, rate, generate_bug_params, num_start_bugs,
-                    plot_figs
+                    stochastic, plot_figs
                 )
                 # (10,3) very approx for doi.org
                 # really big poss number of bugs to get the termination at
@@ -290,7 +307,8 @@ def run_with_exponential_num_bugs(F_list, S_list,
     return out_dict
 
 
-def run_with_exponential_num_bugs_floats_in(R, S, F, num_realisations):
+def run_with_exponential_num_bugs_floats_in(R, S, F, num_realisations,
+                                            stochastic=True):
     doi_bug_commit_distn = np.loadtxt('doiorg_total_commits_for_each_repo.txt')
     start_bugs = np.random.geometric(S, num_realisations) - 1
     nums_caught = []
@@ -298,7 +316,8 @@ def run_with_exponential_num_bugs_floats_in(R, S, F, num_realisations):
     for num_start_bugs in start_bugs:
         repo_len = np.random.choice(doi_bug_commit_distn)
         times_of_bug_finds = run_a_model(
-            10000, repo_len, F, (R, R*0.1), num_start_bugs, plot_figs=False
+            10000, repo_len, F, (R, R*0.1), num_start_bugs, stochastic,
+            plot_figs=False
         )
         number_caught = len(times_of_bug_finds)
         bug_rate = number_caught / repo_len
@@ -307,7 +326,7 @@ def run_with_exponential_num_bugs_floats_in(R, S, F, num_realisations):
     return np.array(nums_caught), np.array(bug_rates)
 
 
-def run_exp_three_times_and_bin(theta, x, n=1000):
+def run_exp_three_times_and_bin(theta, x, n=1000, stochastic=True):
     """
     Run the exponential form of the driver three times and report the binned
     answer. This is in this form to enamble pymc3 functionality.
@@ -329,7 +348,7 @@ def run_exp_three_times_and_bin(theta, x, n=1000):
     bin_vals = np.array(bin_vals)
     for i in range(repeats):
         num_commits, bug_rate = run_with_exponential_num_bugs_floats_in(
-            r, s, f, n
+            r, s, f, n, stochastic
         )
         total_commits_order = np.argsort(num_commits)
         total_commits_IN_order = num_commits[total_commits_order]
@@ -500,16 +519,17 @@ def mcmc_fitter(n_samples=4, n_burn=1):
 
 if __name__ == "__main__":
     run_type = 'exp'  # {'fixed', 'exp'}
+    stochastic = True
     F_list = (0.019, )
-    R = 0.053 * 2
+    R = 0.053 * 2.
     R_std = 0.0013 * 2
     if run_type == 'fixed':
         start_bugs = (10, )  # (0, 50, 250)
         out_dict = run_with_fixed_num_bugs(F_list, start_bugs, 1000, (R, R_std),
-                                           plot_figs=True)
+                                           stochastic, plot_figs=True)
         dict_keys = start_bugs
     elif run_type == 'exp':
-        S_list = (0.5, 0.6, 1.)#(0.1, 0.2)
+        S_list = (0.6,)#(0.1, 0.2)
         # rate = 0.001 scale ~0.1-0.2 gives interesting responses around the
         # sweet spot where no sensitivity transitions to fits that are
         # sensitive but poor - but this param combo cannot give saturation by
@@ -520,7 +540,7 @@ if __name__ == "__main__":
         # by 0.1 we are dealing mostly w 10s of bugs only, depleted too fast
         # in ALL runs.
         out_dict = run_with_exponential_num_bugs(F_list, S_list, 1000,
-                                                 (R, R_std),
+                                                 (R, R_std), stochastic,
                                                  plot_figs=True)
         # can produce a pretty good version of the key plot with r=0.003,
         # s=0.2, b=(10., 3.)... but it "levels out" at 0.04, not 0.1.
