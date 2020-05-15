@@ -124,15 +124,28 @@ class bug():
 
 
 class event_stack():
-    def __init__(self):
+    def __init__(self, max_number_of_bugs_to_find=None):
+        """
+        We use max_number_of_bugs_to_find to increase efficiency, such that
+        we never permit more bugs in the stack than at most we'll need to ID.
+        """
         self._events = []
         # a list of absolute times of known scheduled bug find events
         self._time_of_last_bug = None
+        if max_number_of_bugs_to_find is None:
+            self._limiter = float('inf')
+        else:
+            self._limiter = max_number_of_bugs_to_find
+        self._bugs_in_queue = 0
 
     def add_a_bug(self, bug):
-        assert (self._time_of_last_bug is None
-                or bug.decay_time > self._time_of_last_bug)
-        insort(self._events, bug.decay_time)
+        if self._bugs_in_queue <= self._limiter:
+            assert (self._time_of_last_bug is None
+                    or bug.decay_time > self._time_of_last_bug)
+            insort(self._events, bug.decay_time)
+            self._bugs_in_queue += 1
+        else:  # silently proceed as it doesn't matter
+            pass
 
     def time_until_next_bug(self, current_time):
         """
@@ -151,7 +164,9 @@ class event_stack():
     def advance(self):
         """Removes the next event from the stack and returns its time.
         """
-        return self._events.pop(0)
+        this_bug = self._events.pop(0)  # IndexError if empty list
+        self._bugs_in_queue -= 1  # ...after the pop so we can't go -ve
+        return this_bug
 
     @property
     def events(self):
@@ -161,9 +176,11 @@ class event_stack():
 def run_a_model(max_number_of_bugs_to_find, max_number_of_commits_permissable,
                 F, R_params, N0, stochastic=True, plot_figs=False):
     """
-    Here, the funcion runs until either the bug count reaches
+    Here, the function runs until either the bug count reaches
     max_number_of_bugs_to_find, or the "time" exceeds
     max_number_of_commits_permissable.
+    If stochastic is True, overrides plot_figs to suppress plots that cannot
+    be produced.
     """
     #total_number_of_bugs_to_find = 250
     #bug_lifetime_parameter = 0.0001
@@ -178,7 +195,10 @@ def run_a_model(max_number_of_bugs_to_find, max_number_of_commits_permissable,
     # The more bugs there are, the more pronounced the kinking the accumulation
     variable_lifetime = False
     times_of_bug_finds = []
-    estack = event_stack()
+    bugs_added = 0
+    estack = event_stack(
+        max_number_of_bugs_to_find=max_number_of_bugs_to_find
+    )
     current_time = 0.
     time_is_exceeded = False
 
@@ -187,6 +207,7 @@ def run_a_model(max_number_of_bugs_to_find, max_number_of_commits_permissable,
         a_bug = bug(F, current_time, stochastic=stochastic)
         # print("Adding bug, lifetime:", a_bug.lifetime)
         estack.add_a_bug(a_bug)
+        bugs_added += 1
     # now run the model
     for time_from_now_to_bug_creation in generate_bug(R_params[0], R_params[1],
                                                       stochastic=stochastic):
@@ -199,6 +220,7 @@ def run_a_model(max_number_of_bugs_to_find, max_number_of_commits_permissable,
             a_bug = bug(F, bug_creation_time, stochastic=stochastic)
             # add it
             estack.add_a_bug(a_bug)
+            bugs_added += 1
         # now advance, finding bugs, until we need to generate a new bug:
         try:
             advance_finding_bugs(current_time, bug_creation_time,
@@ -214,7 +236,9 @@ def run_a_model(max_number_of_bugs_to_find, max_number_of_commits_permissable,
         # Move through rest of tstep to the point where the bug is created:
         current_time = bug_creation_time
 
-    if plot_figs:
+    bugs_remaining = bugs_added - len(times_of_bug_finds)
+
+    if plot_figs and stochastic:
         plt.figure('Bugs vs commits')
         plt.plot(times_of_bug_finds, list(range(len(times_of_bug_finds))))
         plt.ylabel('Total number of bugs')
@@ -224,7 +248,7 @@ def run_a_model(max_number_of_bugs_to_find, max_number_of_commits_permissable,
         plt.xlabel('Interval between bug finds')
         plt.ylabel('Number of occurrences')
 
-    return times_of_bug_finds
+    return times_of_bug_finds, bugs_remaining
 
 
 def run_with_fixed_num_bugs(F_list, N0_list, num_realisations,
@@ -239,11 +263,12 @@ def run_with_fixed_num_bugs(F_list, N0_list, num_realisations,
             out_dict[rate][num_start_bugs]['num_commits'] = []
             out_dict[rate][num_start_bugs]['bug_rate'] = []
             out_dict[rate][num_start_bugs]['total_bugs'] = []
+            out_dict[rate][num_start_bugs]['bugs_remaining'] = []
             for i in range(num_realisations):
                 # draw a plausible repo length:
                 repo_len = np.random.choice(doi_bug_commit_distn)
                 # repo_len = 1000
-                times_of_bug_finds = run_a_model(
+                times_of_bug_finds, bugs_remaining = run_a_model(
                     10000, repo_len, rate, generate_bug_params, num_start_bugs,
                     stochastic, plot_figs
                 )
@@ -260,6 +285,9 @@ def run_with_fixed_num_bugs(F_list, N0_list, num_realisations,
                 out_dict[rate][num_start_bugs]['bug_rate'].append(bug_rate)
                 out_dict[rate][num_start_bugs]['total_bugs'].append(
                     number_caught
+                )
+                out_dict[rate][num_start_bugs]['bugs_remaining'].append(
+                    bugs_remaining
                 )
     return out_dict
 
@@ -280,14 +308,22 @@ def run_with_exponential_num_bugs(F_list, S_list,
             out_dict[rate][exp_scale]['num_commits'] = []
             out_dict[rate][exp_scale]['bug_rate'] = []
             out_dict[rate][exp_scale]['total_bugs'] = []
-            start_bugs = np.random.geometric(exp_scale, num_realisations) - 1
+            out_dict[rate][exp_scale]['bugs_remaining'] = []
+            if stochastic:
+                start_bugs = np.random.geometric(exp_scale,
+                                                 num_realisations) - 1
+            else:
+                ppf_pts = np.linspace(0., 1., num_realisations,
+                                      endpoint=False) + 0.000000001
+                # add a small float because strictly ppf(0) = 0
+                start_bugs = geom(exp_scale).ppf(ppf_pts).astype(int) - 1
             # geometric -> exponential discrete equivalent
             # -1 to start from 0 not 1
             for num_start_bugs in start_bugs:
                 # draw a plausible repo length:
                 repo_len = np.random.choice(doi_bug_commit_distn)
                 # repo_len = 1000
-                times_of_bug_finds = run_a_model(
+                times_of_bug_finds, bugs_remaining = run_a_model(
                     10000, repo_len, rate, generate_bug_params, num_start_bugs,
                     stochastic, plot_figs
                 )
@@ -303,18 +339,27 @@ def run_with_exponential_num_bugs(F_list, S_list,
                 out_dict[rate][exp_scale]['num_commits'].append(repo_len)
                 out_dict[rate][exp_scale]['bug_rate'].append(bug_rate)
                 out_dict[rate][exp_scale]['total_bugs'].append(number_caught)
+                out_dict[rate][exp_scale]['bugs_remaining'].append(
+                    bugs_remaining
+                )
     return out_dict
 
 
 def run_with_exponential_num_bugs_floats_in(R, S, F, num_realisations,
                                             stochastic=True):
     doi_bug_commit_distn = np.loadtxt('doiorg_total_commits_for_each_repo.txt')
-    start_bugs = np.random.geometric(S, num_realisations) - 1
+    if stochastic:
+        start_bugs = np.random.geometric(S, num_realisations) - 1
+    else:
+        ppf_pts = np.linspace(0., 1., num_realisations,
+                              endpoint=False) + 0.000000001
+        # add a small float because strictly ppf(0) = 0
+        start_bugs = geom(S).ppf(ppf_pts).astype(int) - 1
     nums_caught = []
     bug_rates = []
     for num_start_bugs in start_bugs:
         repo_len = np.random.choice(doi_bug_commit_distn)
-        times_of_bug_finds = run_a_model(
+        times_of_bug_finds, _ = run_a_model(
             10000, repo_len, F, (R, R*0.1), num_start_bugs, stochastic,
             plot_figs=False
         )
@@ -523,12 +568,12 @@ if __name__ == "__main__":
     R = 0.053 * 2.
     R_std = 0.0013 * 2
     if run_type == 'fixed':
-        start_bugs = (10, )  # (0, 50, 250)
+        start_bugs = (0, 1, 2, 5, 10, 20, 50)  # (0, 50, 250)
         out_dict = run_with_fixed_num_bugs(F_list, start_bugs, 1000, (R, R_std),
                                            stochastic, plot_figs=True)
         dict_keys = start_bugs
     elif run_type == 'exp':
-        S_list = (0.6,)#(0.1, 0.2)
+        S_list = (0.5, 0.6)
         # rate = 0.001 scale ~0.1-0.2 gives interesting responses around the
         # sweet spot where no sensitivity transitions to fits that are
         # sensitive but poor - but this param combo cannot give saturation by
@@ -574,6 +619,9 @@ if __name__ == "__main__":
             total_bugs = np.array(
                 out_dict[F][k]['total_bugs']
             )
+            total_survivors = np.array(
+                out_dict[F][k]['bugs_remaining']
+            )
             plt.plot(num_commits, bug_rate, 'x')
             plt.xlabel('Commits in repo')
             plt.ylabel('Apparent bug find rate')
@@ -614,6 +662,16 @@ if __name__ == "__main__":
             plt.xlabel('Commits in repo')
             plt.ylabel('Total number of bugs')
             plt.legend()
+            plt.figure('Bugs_remaining_in_repo')
+            plt.plot(num_commits, total_survivors, 'x', label=runname)
+            plt.xlabel('Commits in repo')
+            plt.ylabel('Bugs remaining in repo')
+            plt.legend()
+            plt.figure('Bugs_remaining_in_repo_hist')
+            plt.hist(total_survivors, histtype='step', label=runname)
+            plt.xlabel('Bugs remaining in repo')
+            plt.legend()
+
     observed_commits = np.loadtxt('all_real_data_total_commits.txt')
     observed_total_bugs_ordered = np.loadtxt('all_real_data_num_bugs.txt')
     observed_bfr_ordered = np.loadtxt('all_real_data_bug_find_rate.txt')
