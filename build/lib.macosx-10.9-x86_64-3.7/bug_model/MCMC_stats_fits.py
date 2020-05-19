@@ -8,7 +8,7 @@ from theano.tensor.shared_randomstreams import RandomStreams
 from bisect import insort
 from scipy.stats import geom
 from .utils import moving_average
-from bug_model.find_grads import gradients  # ensure to run python setup.py install
+from find_grads import gradients  # ensure to run python setup.py install
 from .driver import moving_average
 
 def statistical_model_bugcount():

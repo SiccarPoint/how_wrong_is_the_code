@@ -1,3 +1,5 @@
+
+import os
 import numpy as np
 import matplotlib.pyplot as plt
 import pymc3 as pm
@@ -6,11 +8,13 @@ from theano import function
 from theano.tensor.shared_randomstreams import RandomStreams
 from bisect import insort
 from scipy.stats import geom
-from .utils import moving_average
+from bug_model.utils import moving_average
 from find_grads import gradients  # ensure to run python setup.py install
-from .driver import moving_average
+from bug_model.driver import moving_average
 
 SEED = np.random.randint(10000000)
+USER_DIR = '/Users/danhobley/development/how_wrong_is_the_code'
+DATA_DIR = os.path.join(USER_DIR, 'bug_model')
 
 # This version seeks to harmonise the numerical model with the stat treatment
 
@@ -254,7 +258,9 @@ def run_a_model(max_number_of_bugs_to_find, max_number_of_commits_permissable,
 def run_with_fixed_num_bugs(F_list, N0_list, num_realisations,
                             generate_bug_params, stochastic=True,
                             plot_figs=False):
-    doi_bug_commit_distn = np.loadtxt('doiorg_total_commits_for_each_repo.txt')
+    doi_bug_commit_distn = np.loadtxt(
+        os.path.join(DATA_DIR, 'doiorg_total_commits_for_each_repo.txt')
+    )
     out_dict = {}
     for F in F_list:
         out_dict[F] = {}
@@ -308,10 +314,15 @@ def run_with_exponential_num_bugs(F_list, S_list,
     set the number of model instantiations to simulate, where the repo lengths
     are drawn randomly from the real data.
     """
+    doi_bug_commit_distn = np.loadtxt(
+        os.path.join(DATA_DIR, 'doiorg_total_commits_for_each_repo.txt')
+    )
     assert type(num_realisations) in (int, str)
     if type(num_realisations) is str:
         assert num_realisations == 'from_data'
-    doi_bug_commit_distn = np.loadtxt('doiorg_total_commits_for_each_repo.txt')
+        N = len(doi_bug_commit_distn)
+    else:
+        N = num_realisations
     out_dict = {}
     for F in F_list:
         out_dict[F] = {}
@@ -324,20 +335,19 @@ def run_with_exponential_num_bugs(F_list, S_list,
                 out_dict[F][R][exp_scale]['total_bugs'] = []
                 out_dict[F][R][exp_scale]['bugs_remaining'] = []
                 if stochastic:
-                    start_bugs = np.random.geometric(exp_scale,
-                                                     num_realisations) - 1
+                    start_bugs = np.random.geometric(exp_scale, N) - 1
                 else:
-                    ppf_pts = np.linspace(0., 1., num_realisations,
+                    ppf_pts = np.linspace(0., 1., N,
                                           endpoint=False) + 0.000000001
                     # add a small float because strictly ppf(0) = 0
                     start_bugs = geom(exp_scale).ppf(ppf_pts).astype(int) - 1
                 # geometric -> exponential discrete equivalent
                 # -1 to start from 0 not 1
-                if num_realisations not in ('from_data', ):
+                if num_realisations == 'from_data':
+                    repo_lengths = doi_bug_commit_distn
+                else:
                     repo_lengths = np.random.choice(doi_bug_commit_distn,
                                                     num_realisations)
-                else:
-                    repo_lengths = doi_bug_commit_distn
                 for num_start_bugs, repo_len in zip(start_bugs, repo_lengths):
                     times_of_bug_finds, bugs_remaining = run_a_model(
                         10000, repo_len, F, (R, R_std), num_start_bugs,
@@ -374,23 +384,28 @@ def run_with_exponential_num_bugs_floats_in(R, S, F, num_realisations,
     set the number of model instantiations to simulate, where the repo lengths
     are drawn randomly from the real data.
     """
+    doi_bug_commit_distn = np.loadtxt(
+        os.path.join(DATA_DIR, 'doiorg_total_commits_for_each_repo.txt')
+    )
     assert type(num_realisations) in (int, str)
     if type(num_realisations) is str:
         assert num_realisations == 'from_data'
-    doi_bug_commit_distn = np.loadtxt('doiorg_total_commits_for_each_repo.txt')
-    if stochastic:
-        start_bugs = np.random.geometric(S, num_realisations) - 1
+        N = len(doi_bug_commit_distn)
     else:
-        ppf_pts = np.linspace(0., 1., num_realisations,
+        N = num_realisations
+    if stochastic:
+        start_bugs = np.random.geometric(S, N) - 1
+    else:
+        ppf_pts = np.linspace(0., 1., N,
                               endpoint=False) + 0.000000001
         # add a small float because strictly ppf(0) = 0
         start_bugs = geom(S).ppf(ppf_pts).astype(int) - 1
     nums_caught = []
     bug_rates = []
-    if num_realisations not in ('from_data', ):
-        repo_lengths = np.random.choice(doi_bug_commit_distn, num_realisations)
-    else:
+    if num_realisations == 'from_data':
         repo_lengths = doi_bug_commit_distn
+    else:
+        repo_lengths = np.random.choice(doi_bug_commit_distn, num_realisations)
     for num_start_bugs, repo_len in zip(start_bugs, repo_lengths):
         times_of_bug_finds, _ = run_a_model(
             10000, repo_len, F, (R, R*0.1), num_start_bugs, stochastic,
@@ -569,8 +584,12 @@ def mcmc_fitter(n_samples=4, n_burn=1):
     # breaks at [0., 1., 2., 3., 4., 5., 7., 10., 20., 50., 100., 200., 1000000.]
     # inspired by https://github.com/WillKoehrsen/ai-projects/blob/master/markov_chain_monte_carlo/markov_chain_monte_carlo.ipynb
     # follows the black box approach of https://docs.pymc.io/notebooks/blackbox_external_likelihood.html
-    real_data = np.loadtxt('real_data_bin_means.txt')
-    bin_intervals = np.loadtxt('real_data_bin_intervals.txt')
+    real_data = np.loadtxt(
+        os.path.join(DATA_DIR, 'real_data_bin_means.txt')
+    )
+    bin_intervals = np.loadtxt(
+        os.path.join(DATA_DIR, 'real_data_bin_intervals.txt')
+    )
     sigma = 5.  # std of noise...??
 
     # make the black box Op model
@@ -716,9 +735,15 @@ if __name__ == "__main__":
                 print(runname, '95% confidence',
                       1.96 * total_survivors.std() / np.sqrt(total_survivors.size))
 
-    observed_commits = np.loadtxt('all_real_data_total_commits.txt')
-    observed_total_bugs_ordered = np.loadtxt('all_real_data_num_bugs.txt')
-    observed_bfr_ordered = np.loadtxt('all_real_data_bug_find_rate.txt')
+    observed_commits = np.loadtxt(
+        os.path.join(DATA_DIR, 'all_real_data_total_commits.txt')
+    )
+    observed_total_bugs_ordered = np.loadtxt(
+        os.path.join(DATA_DIR, 'all_real_data_num_bugs.txt')
+    )
+    observed_bfr_ordered = np.loadtxt(
+        os.path.join(DATA_DIR, 'all_real_data_bug_find_rate.txt')
+    )
     plt.figure('all_runs_total_bugs')
     observed_total_bugs_movingavg = moving_average(observed_total_bugs_ordered,
                                                    n=20)

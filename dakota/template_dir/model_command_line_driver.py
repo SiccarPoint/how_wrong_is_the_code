@@ -1,7 +1,9 @@
 import sys
+import os
 import numpy as np
 from subprocess import call
-from bug_model.simulate_bug_decay import run_with_exponential_num_bugs_floats_in
+from yaml import safe_load
+from bug_model.simulate_bug_decay import run_with_exponential_num_bugs_floats_in, DATA_DIR
 
 # This script much indebted to Katy Barnhart's exceptional tutorial on
 # Dakota for calibration; see
@@ -32,7 +34,8 @@ nums_caught, bug_rates = run_with_exponential_num_bugs_floats_in(
 # sent back to Dakota.
 
 # calc the rmse
-real_bug_rates = np.loadtxt('../all_real_data_bug_find_rate')
+real_bug_rates = np.loadtxt(os.path.join(DATA_DIR,
+                                         'all_real_data_bug_find_rate.txt'))
 # repo lengths are used directly by model and remain in order so simply now
 rmse = (np.mean((real_bug_rates - bug_rates) ** 2)) ** 0.5
 
