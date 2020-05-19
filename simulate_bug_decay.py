@@ -302,7 +302,15 @@ def run_with_exponential_num_bugs(F_list, S_list,
     """
     Note here "stochastic" only controls R & F; the N0 scaling remains
     probabilistic, as this is the point of this function.
+
+    If num_realisations == 'from_data', the commit distribution of repo lengths
+    is drawn directly from the dataset. Otherwise num_realisations is an int to
+    set the number of model instantiations to simulate, where the repo lengths
+    are drawn randomly from the real data.
     """
+    assert type(num_realisations) in (int, str)
+    if type(num_realisations) is str:
+        assert num_realisations == 'from_data'
     doi_bug_commit_distn = np.loadtxt('doiorg_total_commits_for_each_repo.txt')
     out_dict = {}
     for F in F_list:
@@ -325,10 +333,12 @@ def run_with_exponential_num_bugs(F_list, S_list,
                     start_bugs = geom(exp_scale).ppf(ppf_pts).astype(int) - 1
                 # geometric -> exponential discrete equivalent
                 # -1 to start from 0 not 1
-                for num_start_bugs in start_bugs:
-                    # draw a plausible repo length:
-                    repo_len = np.random.choice(doi_bug_commit_distn)
-                    # repo_len = 1000
+                if num_realisations not in ('from_data', ):
+                    repo_lengths = np.random.choice(doi_bug_commit_distn,
+                                                    num_realisations)
+                else:
+                    repo_lengths = doi_bug_commit_distn
+                for num_start_bugs, repo_len in zip(start_bugs, repo_lengths):
                     times_of_bug_finds, bugs_remaining = run_a_model(
                         10000, repo_len, F, (R, R_std), num_start_bugs,
                         stochastic, plot_figs
@@ -353,6 +363,20 @@ def run_with_exponential_num_bugs(F_list, S_list,
 
 def run_with_exponential_num_bugs_floats_in(R, S, F, num_realisations,
                                             stochastic=True):
+    """
+    Create a run of the model, assuming an exponential distribution of starting
+    bugs with rate scaling S, a find rate of F (i.e., bug lifetime),
+    and a creation rate of R. All rates are per commit. We assume the
+    variability on R is 10%.
+
+    If num_realisations == 'from_data', the commit distribution of repo lengths
+    is drawn directly from the dataset. Otherwise num_realisations is an int to
+    set the number of model instantiations to simulate, where the repo lengths
+    are drawn randomly from the real data.
+    """
+    assert type(num_realisations) in (int, str)
+    if type(num_realisations) is str:
+        assert num_realisations == 'from_data'
     doi_bug_commit_distn = np.loadtxt('doiorg_total_commits_for_each_repo.txt')
     if stochastic:
         start_bugs = np.random.geometric(S, num_realisations) - 1
@@ -363,8 +387,11 @@ def run_with_exponential_num_bugs_floats_in(R, S, F, num_realisations,
         start_bugs = geom(S).ppf(ppf_pts).astype(int) - 1
     nums_caught = []
     bug_rates = []
-    for num_start_bugs in start_bugs:
-        repo_len = np.random.choice(doi_bug_commit_distn)
+    if num_realisations not in ('from_data', ):
+        repo_lengths = np.random.choice(doi_bug_commit_distn, num_realisations)
+    else:
+        repo_lengths = doi_bug_commit_distn
+    for num_start_bugs, repo_len in zip(start_bugs, repo_lengths):
         times_of_bug_finds, _ = run_a_model(
             10000, repo_len, F, (R, R*0.1), num_start_bugs, stochastic,
             plot_figs=False
