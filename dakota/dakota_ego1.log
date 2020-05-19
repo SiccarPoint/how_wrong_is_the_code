@@ -1,0 +1,6 @@
+Traceback (most recent call last):
+  File "model_command_line_driver.py", line 4, in <module>
+    from simulate_bug_decay import run_with_exponential_num_bugs_floats_in
+ModuleNotFoundError: No module named 'simulate_bug_decay'
+
+Error: cannot open results file "EGO/run.1/results.out" for evaluation 1

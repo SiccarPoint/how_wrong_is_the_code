@@ -1,8 +1,0 @@
-README.md
-find_grads.c
-setup.py
-how_wrong_is_the_code.egg-info/PKG-INFO
-how_wrong_is_the_code.egg-info/SOURCES.txt
-how_wrong_is_the_code.egg-info/dependency_links.txt
-how_wrong_is_the_code.egg-info/not-zip-safe
-how_wrong_is_the_code.egg-info/top_level.txt

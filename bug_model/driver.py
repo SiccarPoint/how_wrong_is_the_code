@@ -4,11 +4,11 @@ import requests, json, re, os, pandas, sqlite3, time, sqlalchemy
 import numpy as np
 from matplotlib.pyplot import plot, figure, show, xlabel, ylabel, xlim, ylim, bar, hist
 from datetime import datetime
-from header.header import HEADER
+from bug_model.header.header import HEADER
 from requests.auth import HTTPDigestAuth
 from copy import copy
 from sqlalchemy.exc import OperationalError, DatabaseError
-from utils import moving_average
+from bug_model.utils import moving_average
 
 COUNT_ADDITIONS = True
 # This is a hardwired trigger as doing this makes it very likely we hit the

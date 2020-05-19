@@ -1,0 +1,69 @@
+Dakota version 6.11 released Nov 15 2019.
+Repository revision c3efb375 (2019-11-07) built Nov  7 2019 17:32:45.
+Running MPI Dakota executable in serial mode.
+Start time: Tue May 19 12:20:52 2020
+
+-----------------------
+Begin DAKOTA input file
+dakota_ego1.in
+-----------------------
+# Dakota input file
+environment
+  tabular_data
+    tabular_data_file "dakota_ego1.dat"
+
+method
+  efficient_global
+  seed 42
+
+variables
+  continuous_design 3
+  descriptors "R" "S" "F"
+  lower_bounds 0.00001 0.001 0.001
+  upper_bounds 1 1 1
+
+interface
+  fork
+    asynchronous
+    evaluation_concurrency 1
+    parameters_file "params.in"
+    results_file "results.out"
+    copy_files "template_dir/*"
+
+    analysis_driver "python model_command_line_driver.py"
+
+    work_directory
+      named "EGO/run"
+      directory_tag
+      directory_save
+      file_save
+
+responses
+  calibration_terms 1
+  response_descriptors "rmse"
+  no_gradients
+  no_hessians
+---------------------
+End DAKOTA input file
+---------------------
+
+Using Dakota input file 'dakota_ego1.in'
+Writing new restart file 'dakota_ego1.rst'.
+
+>>>>> Executing environment.
+
+>>>>> Running efficient_global iterator.
+
+>>>>> Building global_kriging approximations.
+
+NonD lhs Samples = 10 Seed (user-specified) = 42
+
+---------------------
+Begin Evaluation    1
+---------------------
+Parameters for evaluation 1:
+                      8.1560370783e-01 R
+                      7.1457239475e-01 S
+                      2.9769399372e-01 F
+
+blocking fork: python model_command_line_driver.py params.in results.out
