@@ -2,4 +2,4 @@
 # stochastic bug model
 import subprocess
 
-subprocess.call('./start_ego1.sh')
+# subprocess.call('./start_ego1.sh')

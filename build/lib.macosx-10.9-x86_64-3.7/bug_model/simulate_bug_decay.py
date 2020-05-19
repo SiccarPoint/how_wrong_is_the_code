@@ -408,7 +408,7 @@ def run_with_exponential_num_bugs_floats_in(R, S, F, num_realisations,
         repo_lengths = np.random.choice(doi_bug_commit_distn, num_realisations)
     for num_start_bugs, repo_len in zip(start_bugs, repo_lengths):
         times_of_bug_finds, _ = run_a_model(
-            10000, repo_len, F, (R, R*0.1), num_start_bugs, stochastic,
+            10000, repo_len, F, (float(R), float(R)*0.1), num_start_bugs, stochastic,
             plot_figs=False
         )
         number_caught = len(times_of_bug_finds)

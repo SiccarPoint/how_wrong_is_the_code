@@ -1,0 +1,36 @@
+# Dakota input file
+environment
+  tabular_data
+    tabular_data_file "dakota_gridtraverse1.dat"
+
+method
+  multidim_parameter_study
+  partitions 21 21 21
+
+variables
+  continuous_design 3
+  descriptors "R" "S" "F"
+  lower_bounds 0.00001 0.001 0.001
+  upper_bounds 1 1 1
+
+interface
+  fork
+    asynchronous
+    evaluation_concurrency 1
+    parameters_file "params.in"
+    results_file "results.out"
+    copy_files "template_dir/*"
+
+    analysis_driver "python model_command_line_driver.py"
+
+    work_directory
+      named "MULTIDIM_PARAM/run"
+      directory_tag
+      directory_save
+      file_save
+
+responses
+  calibration_terms 1
+  response_descriptors "rmse"
+  no_gradients
+  no_hessians
