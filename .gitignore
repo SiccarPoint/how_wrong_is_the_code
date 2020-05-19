@@ -2,3 +2,4 @@
 bug_model/header/
 dakota/EGO/
 .DS_Store
+bug_model/header/header.py
