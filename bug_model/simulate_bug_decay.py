@@ -10,7 +10,7 @@ from bisect import insort
 from matplotlib.pyplot import plot, figure, show
 from scipy.stats import geom
 from bug_model.utils import moving_average
-from find_grads import gradients  # ensure to run python setup.py install
+from bug_model.find_grads import gradients  # ensure to run python setup.py install (or develop)
 from bug_model.driver import moving_average
 
 SEED = np.random.randint(10000000)
