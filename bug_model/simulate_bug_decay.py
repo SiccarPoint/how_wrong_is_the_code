@@ -7,7 +7,7 @@ import theano.tensor as T
 from theano import function
 from theano.tensor.shared_randomstreams import RandomStreams
 from bisect import insort
-from matplotlib import plot, figure, show
+from matplotlib.pyplot import plot, figure, show
 from scipy.stats import geom
 from bug_model.utils import moving_average
 from find_grads import gradients  # ensure to run python setup.py install
@@ -427,15 +427,17 @@ def run_exp_three_times_and_bin(theta, x, n=1000, repeats=3, stochastic=True):
     Parameters
     ----------
     theta :
-        iterable of the driving params, (R, S, F)
+        Iterable of the driving params, (R, S, F)
     x :
-        the bin intervals, i.e., the dependent variable
-    n : int
-        the number of model realisations to create (i.e. num repos to simulate)
+        The bin intervals, i.e., the dependent variable
+    n : int or str
+        The number of model realisations to create (i.e. num repos to simulate).
+        Can also be 'from_data', in which case the model will use only the
+        real repo lengths.
     repeats : int
-        the number of runs to average, default 3 for obvious reasons
+        The number of runs to average, default 3 for obvious reasons
     stochastic : bool
-        switch stochastic and deterministic behaviour for wait times
+        Switch stochastic and deterministic behaviour for wait times
     """
     print('beginning a new model run...')
     bin_vals = np.zeros(len(x) - 1, dtype=float)
