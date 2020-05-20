@@ -7,6 +7,7 @@ import theano.tensor as T
 from theano import function
 from theano.tensor.shared_randomstreams import RandomStreams
 from bisect import insort
+from matplotlib import plot, figure, show
 from scipy.stats import geom
 from bug_model.utils import moving_average
 from find_grads import gradients  # ensure to run python setup.py install
@@ -418,7 +419,7 @@ def run_with_exponential_num_bugs_floats_in(R, S, F, num_realisations,
     return np.array(nums_caught), np.array(bug_rates)
 
 
-def run_exp_three_times_and_bin(theta, x, n=1000, stochastic=True):
+def run_exp_three_times_and_bin(theta, x, n=1000, repeats=3, stochastic=True):
     """
     Run the exponential form of the driver three times and report the binned
     answer. This is in this form to enamble pymc3 functionality.
@@ -429,15 +430,17 @@ def run_exp_three_times_and_bin(theta, x, n=1000, stochastic=True):
         iterable of the driving params, (R, S, F)
     x :
         the bin intervals, i.e., the dependent variable
-    n :
+    n : int
         the number of model realisations to create (i.e. num repos to simulate)
+    repeats : int
+        the number of runs to average, default 3 for obvious reasons
+    stochastic : bool
+        switch stochastic and deterministic behaviour for wait times
     """
     print('beginning a new model run...')
+    bin_vals = np.zeros(len(x) - 1, dtype=float)
     # for clarity, separate out the three
-    repeats = 3
     r, s, f = theta
-    bin_vals = [0., ] * (len(x) - 1)
-    bin_vals = np.array(bin_vals)
     for i in range(repeats):
         num_commits, bug_rate = run_with_exponential_num_bugs_floats_in(
             r, s, f, n, stochastic
@@ -445,13 +448,35 @@ def run_exp_three_times_and_bin(theta, x, n=1000, stochastic=True):
         total_commits_order = np.argsort(num_commits)
         total_commits_IN_order = num_commits[total_commits_order]
         bug_find_rate_ordered = bug_rate[total_commits_order]
-        bbase_index = 0
-        for en, btop in enumerate(x[1:]):
-            btop_index = np.searchsorted(total_commits_IN_order, btop, 'right')
-            bin_vals[en] += np.mean(
-                bug_find_rate_ordered[bbase_index:btop_index]
-            ) / repeats
-            bbase_index = btop_index
+        bin_vals += bin_output_data(bug_find_rate_ordered,
+                                    total_commits_IN_order,
+                                    x) / repeats
+    return bin_vals
+
+
+def bin_output_data(bug_find_rate_ordered, total_commits_ordered, bins):
+    """
+    Bins are exclusive at the bottom end, inclusive at the top end.
+
+    Examples
+    --------
+    >>> bfr = np.array([0., 1., 2., 1., 2., 3., 4., 5.])
+    >>> total_commits = np.array([1, 1, 1, 2, 2, 2, 3, 5])
+    >>> bins = np.array([0, 1, 2, 3, 4, 5, 6])
+    >>> np.allclose(bin_output_data(bfr, total_commits, bins),
+    ...             np.array([1., 2., 4., np.nan, 5., np.nan]),
+    ...             equal_nan=True)
+    True
+
+    """
+    bin_vals = np.empty(len(bins) - 1, dtype=float)
+    bbase_index = 0
+    for en, btop in enumerate(bins[1:]):
+        btop_index = np.searchsorted(total_commits_ordered, btop, 'right')
+        bin_vals[en] = np.mean(
+            bug_find_rate_ordered[bbase_index:btop_index]
+        )
+        bbase_index = btop_index
     return bin_vals
 
 
@@ -514,12 +539,6 @@ class theano_Op_wrapper(T.Op):
         # vector-Jacobian product - g[0] is a vector of parameter values
         theta, = inputs  # our parameters
         return [g[0] * self._logpgrad(theta)]
-
-
-
-
-
-
 
 
 class LogLikeGrad(T.Op):
@@ -628,7 +647,7 @@ if __name__ == "__main__":
                                            stochastic, plot_figs=True)
         dict_keys = start_bugs
     elif run_type == 'exp':
-        S_list = (0.5, 0.6)
+        S_list = (1., )#(0.5, 0.6)
         # S_list = (0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.)
         # rate = 0.001 scale ~0.1-0.2 gives interesting responses around the
         # sweet spot where no sensitivity transitions to fits that are
