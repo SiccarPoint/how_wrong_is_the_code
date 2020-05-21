@@ -681,25 +681,159 @@ def calc_event_rate(times_of_events):
     return rates, np.median(rates), np.mean(rates)
 
 
-def calc_averages_for_intervals(commits_in_order, bug_fraction_in_order):
-    """Calc the mean value of bug_fraction for the intervals
-    [0, 1, 2, 3, 4, 5, 6, 7, 8, 10, 14, 20, 28, 42, 90, 1000000]
-    (selected so once commits>4, each interval contains ~50 repos)
+def create_bins(bin_size, array_to_bin, dependent_data=None, method='mean'):
     """
-    bin_intervals = np.array(
-        [0, 1, 2, 3, 4, 5, 6, 7, 8, 10, 14, 20, 28, 42, 90, 1000000]
-    )
+    Sweeps an array and creates bins of minimum size bin_size. Larger bins are
+    permitted if the data in the array cannot be atomised at the necessary
+    scale.
+
+    Parameters
+    ----------
+    bin_size : int
+        The minimum bin size
+    array_to_bin : array
+        The data on which the bins are to be determined
+    dependent_data : array or None
+        The data to average within the bins. An average determined by method
+        will be performed on this data. If None, averaged_data will also be
+        None.
+    method : {'mean', 'median'}
+        The averaging style to apply to dependent_data (if provided).
+
+    Returns
+    -------
+    bins : array
+        The bin intervals, start-inclusive, end-exclusive
+    bin_count : array
+        The number of data entries in each bin
+    averaged_data : array or None
+        The averaged dependent_data for each bin
+
+    Examples
+    --------
+    >>> x = np.array([1., 1., 2., 2., 3., 5., 10., 1.])
+    >>> y = np.array([1., 2., 2., 3., 3., 5., 10., 3.])
+    >>> bins, bin_count, averaged_data = create_bins(2, x, y, method='mean')
+
+    Note the increment to ensure bins[-1] > max(x):
+
+    >>> np.allclose(bins, [1., 2., 10 + np.finfo(np.float32).eps])
+    True
+
+    Final trailing entry lumped to previous bin to ensure all
+    len(bins) > bin_size:
+
+    >>> np.all(np.equal(bin_count, [3, 2, 3]))
+    True
+
+    >>> np.allclose(averaged_data, [2., 2.5, 6.])
+    True
+    >>> _, _, averaged_data = create_bins(2, x, y, method='median')
+    >>> np.allclose(averaged_data, [2., 2.5, 5.])
+    True
+
+    A simpler example:
+
+    >>> x = np.array([1., 1., 2., 2., 3., 5., 10., 1.])
+    >>> bins, bin_count, averaged_data = create_bins(1, x)
+    >>> np.all(np.equal(bin_count, [3, 2, 1, 1, 1]))
+    True
+    >>> np.allclose(bins, [1., 2., 3., 5., 10., 10. + np.finfo(np.float32).eps])
+    True
+    >>> averaged_data is None
+    True
+    """
+    machine_precision = np.finfo(np.float32).eps
+    assert method in ('mean', 'median')
+    assert bin_size > 0.
     bin_vals = []
     bin_count = []
-    bbase_index = 0
-    for btop in bin_intervals[1:]:
-        btop_index = np.searchsorted(commits_in_order, btop, 'right')
-        bin_vals.append(np.mean(
-            bug_fraction_in_order[bbase_index:btop_index]
-        ))
-        bin_count.append(btop_index - bbase_index)
-        bbase_index = btop_index
-    return np.array(bin_vals), np.array(bin_count)
+    # sort the data
+    order = np.argsort(array_to_bin)
+    x_sort = array_to_bin[order]
+    if dependent_data is not None:
+        assert array_to_bin.size == dependent_data.size
+        y_sort = dependent_data[order]
+    # work through the data
+    bin_vals.append(x_sort[0])
+    # find the natural breaks:
+    diffs = np.diff(x_sort)
+    breaks = np.where(np.logical_not(np.isclose(diffs, 0.)))[0] + 1
+    last_break = 0
+    # find the divisions
+    for breakpt in breaks:
+        break_len = breakpt - last_break
+        if break_len >= bin_size:
+            bin_count.append(break_len)
+            bin_vals.append(x_sort[breakpt])
+            last_break = breakpt
+    # This will never close the final interval, so conclude with
+    last_interval = x_sort.size - last_break
+    if last_interval >= bin_size:
+        bin_count.append(last_interval)
+        bin_vals.append(x_sort[-1] + machine_precision)
+    else: # lump into the previous interval
+        bin_count[-1] += last_interval
+        _ = bin_vals.pop()
+        bin_vals[-1] = x_sort[-1] + machine_precision
+    bin_vals = np.array(bin_vals)
+    bin_count = np.array(bin_count)
+
+    # now average the data if necessary:
+    if dependent_data is None:
+        averaged_data = None
+    else:
+        averaged_data = calc_averages_for_intervals(y_sort, bin_count,
+                                                    method=method)
+    return bin_vals, bin_count, averaged_data
+
+
+def calc_averages_for_intervals(data, bin_counts, method='mean'):
+    """Calc the mean value of bug_fraction for bins, e.g. as produced from
+    create_bins. Assumes data is already in the correct order.
+
+    Parameters
+    ----------
+    data : array
+        The data to bin. An average determined by method will be performed on
+        this data.
+    bin_counts : int
+        The number of entries in each bin
+    method : {'mean', 'median'}
+        The averaging style to apply to data.
+
+    Returns
+    -------
+    averaged_data : array
+        The averaged data for each bin.
+
+    Examples
+    --------
+    >>> data = np.array([1., 2., 6., 2., 4., 5., 7., 9.])
+    >>> bin_counts = np.array([3, 2, 1, 2])
+    >>> avgs = calc_averages_for_intervals(data, bin_counts)
+    >>> np.allclose(avgs, np.array([3., 3., 5., 8.]))
+    True
+    >>> avg_medians = calc_averages_for_intervals(data, bin_counts,
+    ...                                           method='median')
+    >>> np.allclose(avg_medians, np.array([2., 3., 5., 8.]))
+    True
+    """
+    assert bin_counts.sum() == len(data)
+    if method == 'mean':
+        averagefunc = np.mean
+    elif method == 'median':
+        averagefunc = np.median
+    else:
+        raise NameError('method not recognised')
+    averages = np.empty_like(bin_counts, dtype=float)
+    last_step = 0
+    for en, step in enumerate(bin_counts):
+        next_step = last_step + step
+        this_data = data[last_step:next_step]
+        averages[en] = averagefunc(this_data)
+        last_step = next_step
+    return averages
 
 
 
@@ -816,10 +950,6 @@ def spatial_percentile(percentile, points_on_line_x, points_on_line_y):
     """
     Calculate a percentile for a dataset where the data are weighted by their
     spacing. Percentile specified as a fraction.
-
-    Examples
-    --------
-
     """
     assert 0. <= percentile <= 1.
     # First, uniquely associate each value with its spacing. This is just a
