@@ -750,10 +750,10 @@ def create_bins(bin_size, array_to_bin, dependent_data=None, method='mean'):
     bin_count = []
     # sort the data
     order = np.argsort(array_to_bin)
-    x_sort = array_to_bin[order]
+    x_sort = np.array(array_to_bin)[order]
     if dependent_data is not None:
         assert array_to_bin.size == dependent_data.size
-        y_sort = dependent_data[order]
+        y_sort = np.array(dependent_data)[order]
     # work through the data
     bin_vals.append(x_sort[0])
     # find the natural breaks:
