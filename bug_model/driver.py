@@ -717,7 +717,7 @@ def create_bins(bin_size, array_to_bin, dependent_data=None, method='mean'):
 
     Note the increment to ensure bins[-1] > max(x):
 
-    >>> np.allclose(bins, [1., 2., 10 + np.finfo(np.float32).eps])
+    >>> np.allclose(bins, [1., 2., 3., 10 + np.finfo(np.float32).eps])
     True
 
     Final trailing entry lumped to previous bin to ensure all
@@ -774,7 +774,6 @@ def create_bins(bin_size, array_to_bin, dependent_data=None, method='mean'):
         bin_vals.append(x_sort[-1] + machine_precision)
     else: # lump into the previous interval
         bin_count[-1] += last_interval
-        _ = bin_vals.pop()
         bin_vals[-1] = x_sort[-1] + machine_precision
     bin_vals = np.array(bin_vals)
     bin_count = np.array(bin_count)
