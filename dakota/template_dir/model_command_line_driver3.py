@@ -40,7 +40,7 @@ real_bins, real_bin_counts, real_binned_bfr = create_bins(
 
 
 # launch the simulation
-avg_sim_bin_bfr = np.empty_like(real_binned_bfr, dtype=float)
+avg_sim_bin_bfr = np.zeros_like(real_binned_bfr, dtype=float)
 avg_sim_std_low_commits = 0
 for i in range(REPEATS):
     num_bugs, bug_rate, num_commits = run_with_exponential_num_bugs_floats_in(
