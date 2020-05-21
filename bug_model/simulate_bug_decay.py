@@ -380,6 +380,8 @@ def run_with_exponential_num_bugs_floats_in(R, S, F, num_realisations,
     and a creation rate of R. All rates are per commit. We assume the
     variability on R is 10%.
 
+    Primarily a cleaner io interface than run_with_exponential_num_bugs.
+
     If num_realisations == 'from_data', the commit distribution of repo lengths
     is drawn directly from the dataset. Otherwise num_realisations is an int to
     set the number of model instantiations to simulate, where the repo lengths
@@ -416,7 +418,7 @@ def run_with_exponential_num_bugs_floats_in(R, S, F, num_realisations,
         bug_rate = number_caught / repo_len
         nums_caught.append(number_caught)
         bug_rates.append(bug_rate)
-    return np.array(nums_caught), np.array(bug_rates)
+    return np.array(nums_caught), np.array(bug_rates), repo_lengths
 
 
 def run_exp_three_times_and_bin(theta, x, n=1000, repeats=3, stochastic=True):
@@ -444,7 +446,9 @@ def run_exp_three_times_and_bin(theta, x, n=1000, repeats=3, stochastic=True):
     # for clarity, separate out the three
     r, s, f = theta
     for i in range(repeats):
-        num_commits, bug_rate = run_with_exponential_num_bugs_floats_in(
+        (num_bugs,
+         bug_rate,
+         num_commits) = run_with_exponential_num_bugs_floats_in(
             r, s, f, n, stochastic
         )
         total_commits_order = np.argsort(num_commits)
