@@ -19,7 +19,7 @@ variables
   continuous_design 3
   descriptors "R" "S" "F"
   lower_bounds 0.001 0.001 0.001
-  upper_bounds 0.25 1 0.25
+  upper_bounds 0.2 1 0.2
 
 interface
   fork
