@@ -1,0 +1,81 @@
+Dakota version 6.11 released Nov 15 2019.
+Repository revision c3efb375 (2019-11-07) built Nov  7 2019 17:32:45.
+Running MPI Dakota executable in serial mode.
+Start time: Fri May 22 12:59:31 2020
+
+-----------------------
+Begin DAKOTA input file
+dakota_nl2sol1.in
+-----------------------
+# Dakota input file, uses a moving average approach with a finer scale,
+# combined with a second calibration term based on the std of bug find
+# rates when at low commits (when there is much scatter, and we know N0
+# controls this scatter), i.e., the first exploits the shape and the
+# second exploits the distribution of the response.
+
+# This version iterates on 3 by asking for a more discretised fit to scatter
+# across the sampled space
+
+# This attempts a nonlinear least squares Dakota method on the data to try to
+# get confidence intervals
+# see https://dakota.sandia.gov/sites/default/files/docs/6.10/html-ref/method-nl2sol.html
+
+environment
+  tabular_data
+    tabular_data_file "dakota_nl2sol1.dat"
+
+method
+  max_iterations = 100
+  convergence_tolerance = 1e-2
+  nl2sol
+
+model
+  single
+
+variables
+  continuous_design 3
+  descriptors "R" "S" "F"
+  lower_bounds 0.001 0.001 0.001
+  upper_bounds 0.25 1 0.25
+
+interface
+  fork
+    asynchronous
+    evaluation_concurrency 4
+    parameters_file "params.in"
+    results_file "results.out"
+    copy_files "template_dir/*"
+
+    analysis_driver "python model_command_line_driver4.py"
+
+    work_directory
+      named "NL2SOL1/run"
+      directory_tag
+      directory_save
+      file_save
+
+responses
+  calibration_terms 2
+  response_descriptors "rmse" "rmse_std"  # units both just bfr
+  analytic_gradients
+  no_hessians
+---------------------
+End DAKOTA input file
+---------------------
+
+Using Dakota input file 'dakota_nl2sol1.in'
+Writing new restart file 'dakota_nl2sol1.rst'.
+
+>>>>> Executing environment.
+
+>>>>> Running nl2sol iterator.
+
+---------------------
+Begin Evaluation    1
+---------------------
+Parameters for evaluation 1:
+                      1.0000000000e-03 R
+                      1.0000000000e-03 S
+                      1.0000000000e-03 F
+
+blocking fork: python model_command_line_driver4.py params.in results.out
