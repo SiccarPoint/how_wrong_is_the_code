@@ -6,6 +6,8 @@
 
 # This EGO sim is the direct equivalent of gridtraverse3
 
+# THIS FIT IS DEMONSTRABLY POOR
+
 environment
   tabular_data
     tabular_data_file "dakota_ego2.dat"
