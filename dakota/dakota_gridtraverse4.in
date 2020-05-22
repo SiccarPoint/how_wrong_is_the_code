@@ -5,7 +5,8 @@
 # second exploits the distribution of the response.
 
 # This version iterates on 3 by asking for a more discretised fit to scatter
-# across the sampled space, and tightens some of the bounds
+# across the sampled space, and tightens some of the bounds - F in particular
+# was pressed into the corner in 3.
 
 environment
   tabular_data
