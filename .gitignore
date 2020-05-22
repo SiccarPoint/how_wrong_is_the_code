@@ -2,6 +2,7 @@
 bug_model/header/
 build/
 dakota/EGO/
+dakota/EGO2/
 dakota/MULTIDIM_PARAM
 dakota/MULTIDIM_PARAM2
 dakota/MULTIDIM_PARAM3

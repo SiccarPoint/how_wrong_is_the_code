@@ -1,0 +1,43 @@
+# Dakota input file, uses a moving average approach with a finer scale,
+# combined with a second calibration term based on the std of bug find
+# rates when at low commits (when there is much scatter, and we know N0
+# controls this scatter), i.e., the first exploits the shape and the
+# second exploits the distribution of the response.
+
+# This EGO sim is the direct equivalent of gridtraverse3
+
+environment
+  tabular_data
+    tabular_data_file "dakota_ego2.dat"
+
+method
+  efficient_global
+  seed 42
+
+variables
+  continuous_design 3
+  descriptors "R" "S" "F"
+  lower_bounds 0.00001 0.001 0.001
+  upper_bounds 1 1 1
+
+interface
+  fork
+    asynchronous
+    evaluation_concurrency 4
+    parameters_file "params.in"
+    results_file "results.out"
+    copy_files "template_dir/*"
+
+    analysis_driver "python model_command_line_driver3.py"
+
+    work_directory
+      named "EGO2/run"
+      directory_tag
+      directory_save
+      file_save
+
+responses
+  calibration_terms 2
+  response_descriptors "rmse" "diff_std_at_low_commits"  # units both just bfr
+  no_gradients
+  no_hessians
