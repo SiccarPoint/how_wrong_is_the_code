@@ -5,7 +5,7 @@
 # second exploits the distribution of the response.
 
 # This version iterates on 3 by asking for a more discretised fit to scatter
-# across the sampled space
+# across the sampled space, and tightens some of the bounds
 
 environment
   tabular_data
@@ -18,8 +18,8 @@ method
 variables
   continuous_design 3
   descriptors "R" "S" "F"
-  lower_bounds 0.00001 0.001 0.001
-  upper_bounds 1 1 1
+  lower_bounds 0.001 0.001 0.001
+  upper_bounds 0.25 1 0.25
 
 interface
   fork
