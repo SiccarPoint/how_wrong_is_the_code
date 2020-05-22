@@ -6,6 +6,7 @@ dakota/EGO2/
 dakota/MULTIDIM_PARAM
 dakota/MULTIDIM_PARAM2
 dakota/MULTIDIM_PARAM3
+dakota/MULTIDIM_PARAM4
 .DS_Store
 bug_model/header/header.py
 build/lib.macosx-10.9-x86_64-3.7/bug_model/header/header.py
