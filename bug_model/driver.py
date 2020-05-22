@@ -823,7 +823,7 @@ def calc_averages_for_intervals(data, bin_counts, method='mean'):
         averagefunc = np.mean
     elif method == 'median':
         averagefunc = np.median
-    elif method == 'median':
+    elif method == 'std':
         averagefunc = np.std
     else:
         raise NameError('method not recognised')
