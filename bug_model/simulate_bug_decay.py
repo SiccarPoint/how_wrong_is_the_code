@@ -7,7 +7,7 @@ import theano.tensor as T
 from theano import function
 from theano.tensor.shared_randomstreams import RandomStreams
 from bisect import insort
-from matplotlib.pyplot import plot, figure, show
+from matplotlib.pyplot import plot, figure, show, bar
 from scipy.stats import geom
 from bug_model.utils import moving_average
 from bug_model.find_grads import gradients  # ensure to run python setup.py install (or develop)
@@ -458,6 +458,21 @@ def run_exp_three_times_and_bin(theta, x, n=1000, repeats=3, stochastic=True):
                                     total_commits_IN_order,
                                     x) / repeats
     return bin_vals
+
+
+def plot_S_probability_distribution(S):
+    dist = geom(S)
+    stats = dist.stats()
+    mean, std = float(stats[0]) - 1., float(stats[1])
+    xrange = [1, ]
+    toadd = 2
+    # stop plotting once the pmf falls below 0.1% of starting pt
+    while dist.pmf(xrange[-1]) > dist.pmf(xrange[0]) / 1000.:
+        xrange.append(toadd)
+        toadd += 1
+    bar(xrange, dist.pmf(xrange), width=1)
+    print('Mean of distribution is', mean)
+    return mean, std
 
 
 def bin_output_data(bug_find_rate_ordered, total_commits_ordered, bins):
