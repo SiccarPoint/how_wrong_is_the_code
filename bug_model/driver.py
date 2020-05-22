@@ -697,7 +697,7 @@ def create_bins(bin_size, array_to_bin, dependent_data=None, method='mean'):
         The data to average within the bins. An average determined by method
         will be performed on this data. If None, averaged_data will also be
         None.
-    method : {'mean', 'median'}
+    method : {'mean', 'median', 'std'}
         The averaging style to apply to dependent_data (if provided).
 
     Returns
@@ -744,7 +744,7 @@ def create_bins(bin_size, array_to_bin, dependent_data=None, method='mean'):
     True
     """
     machine_precision = np.finfo(np.float32).eps
-    assert method in ('mean', 'median')
+    assert method in ('mean', 'median', 'std')
     assert bin_size > 0.
     bin_vals = []
     bin_count = []
@@ -798,7 +798,7 @@ def calc_averages_for_intervals(data, bin_counts, method='mean'):
         this data.
     bin_counts : int
         The number of entries in each bin
-    method : {'mean', 'median'}
+    method : {'mean', 'median', 'std'}
         The averaging style to apply to data.
 
     Returns
@@ -823,6 +823,8 @@ def calc_averages_for_intervals(data, bin_counts, method='mean'):
         averagefunc = np.mean
     elif method == 'median':
         averagefunc = np.median
+    elif method == 'median':
+        averagefunc = np.std
     else:
         raise NameError('method not recognised')
     averages = np.empty_like(bin_counts, dtype=float)
