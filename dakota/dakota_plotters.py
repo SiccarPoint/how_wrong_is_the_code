@@ -11,7 +11,7 @@ df = df.set_index(OUTPARAMS).drop(columns=["interface"])
 
 (
     ggplot(df.reset_index(),
-           aes(x=INPARAMS[1], y=INPARAMS[2], color=OUTPARAMS[0]))
+           aes(x=INPARAMS[0], y=INPARAMS[2], color=OUTPARAMS[0]))
     + geom_point()
     + scale_color_continuous(limits=(0., 0.5))
 )
