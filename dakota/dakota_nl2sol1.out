@@ -1,7 +1,7 @@
 Dakota version 6.11 released Nov 15 2019.
 Repository revision c3efb375 (2019-11-07) built Nov  7 2019 17:32:45.
 Running MPI Dakota executable in serial mode.
-Start time: Fri May 22 12:59:31 2020
+Start time: Tue May 26 14:52:52 2020
 
 -----------------------
 Begin DAKOTA input file
@@ -26,7 +26,6 @@ environment
 
 method
   max_iterations = 100
-  convergence_tolerance = 1e-2
   nl2sol
 
 model
@@ -37,6 +36,7 @@ variables
   descriptors "R" "S" "F"
   lower_bounds 0.001 0.001 0.001
   upper_bounds 0.25 1 0.25
+  initial_point 0.1 0.5 0.1
 
 interface
   fork
@@ -46,7 +46,7 @@ interface
     results_file "results.out"
     copy_files "template_dir/*"
 
-    analysis_driver "python model_command_line_driver4.py"
+    analysis_driver "python model_command_line_driver_nl2sol1.py"
 
     work_directory
       named "NL2SOL1/run"
@@ -57,7 +57,9 @@ interface
 responses
   calibration_terms 2
   response_descriptors "rmse" "rmse_std"  # units both just bfr
-  analytic_gradients
+  numerical_gradients
+    method_source dakota
+    interval_type central
   no_hessians
 ---------------------
 End DAKOTA input file
@@ -74,8 +76,1139 @@ Writing new restart file 'dakota_nl2sol1.rst'.
 Begin Evaluation    1
 ---------------------
 Parameters for evaluation 1:
-                      1.0000000000e-03 R
-                      1.0000000000e-03 S
-                      1.0000000000e-03 F
+                      1.0000000000e-01 R
+                      5.0000000000e-01 S
+                      1.0000000000e-01 F
 
-blocking fork: python model_command_line_driver4.py params.in results.out
+blocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+
+Active response data for evaluation 1:
+Active set vector = { 1 1 }
+                      5.2819918736e-02 rmse
+                      1.1476828017e-01 rmse_std
+
+
+
+------------------------------------------
+Begin Dakota derivative estimation routine
+------------------------------------------
+
+>>>>> Dakota finite difference gradient evaluation for x[1] + h:
+
+---------------------
+Begin Evaluation    2
+---------------------
+Parameters for evaluation 2:
+                      1.0010000000e-01 R
+                      5.0000000000e-01 S
+                      1.0000000000e-01 F
+
+(Asynchronous job 2 added to queue)
+
+
+>>>>> Dakota finite difference gradient evaluation for x[1] - h:
+
+---------------------
+Begin Evaluation    3
+---------------------
+Parameters for evaluation 3:
+                      9.9900000000e-02 R
+                      5.0000000000e-01 S
+                      1.0000000000e-01 F
+
+(Asynchronous job 3 added to queue)
+
+
+>>>>> Dakota finite difference gradient evaluation for x[2] + h:
+
+---------------------
+Begin Evaluation    4
+---------------------
+Parameters for evaluation 4:
+                      1.0000000000e-01 R
+                      5.0050000000e-01 S
+                      1.0000000000e-01 F
+
+(Asynchronous job 4 added to queue)
+
+
+>>>>> Dakota finite difference gradient evaluation for x[2] - h:
+
+---------------------
+Begin Evaluation    5
+---------------------
+Parameters for evaluation 5:
+                      1.0000000000e-01 R
+                      4.9950000000e-01 S
+                      1.0000000000e-01 F
+
+(Asynchronous job 5 added to queue)
+
+
+>>>>> Dakota finite difference gradient evaluation for x[3] + h:
+
+---------------------
+Begin Evaluation    6
+---------------------
+Parameters for evaluation 6:
+                      1.0000000000e-01 R
+                      5.0000000000e-01 S
+                      1.0010000000e-01 F
+
+(Asynchronous job 6 added to queue)
+
+
+>>>>> Dakota finite difference gradient evaluation for x[3] - h:
+
+---------------------
+Begin Evaluation    7
+---------------------
+Parameters for evaluation 7:
+                      1.0000000000e-01 R
+                      5.0000000000e-01 S
+                      9.9900000000e-02 F
+
+(Asynchronous job 7 added to queue)
+
+
+
+Blocking synchronize of 6 asynchronous evaluations
+First pass: initiating 4 local asynchronous jobs
+Initiating evaluation 2
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Initiating evaluation 3
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Initiating evaluation 4
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Initiating evaluation 5
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Second pass: scheduling 2 remaining local asynchronous jobs
+Waiting on completed jobs
+Evaluation 2 has completed
+Initiating evaluation 6
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Waiting on completed jobs
+Evaluation 4 has completed
+Initiating evaluation 7
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Waiting on completed jobs
+Evaluation 3 has completed
+Waiting on completed jobs
+Evaluation 5 has completed
+Waiting on completed jobs
+Evaluation 6 has completed
+Waiting on completed jobs
+Evaluation 7 has completed
+
+Active response data for evaluation 2:
+Active set vector = { 1 1 }
+                      5.2596830891e-02 rmse
+                      1.1374484296e-01 rmse_std
+
+
+Active response data for evaluation 3:
+Active set vector = { 1 1 }
+                      5.1830010179e-02 rmse
+                      1.1197357201e-01 rmse_std
+
+
+Active response data for evaluation 4:
+Active set vector = { 1 1 }
+                      5.1660824363e-02 rmse
+                      1.0835855257e-01 rmse_std
+
+
+Active response data for evaluation 5:
+Active set vector = { 1 1 }
+                      5.3768568684e-02 rmse
+                      1.1426967437e-01 rmse_std
+
+
+Active response data for evaluation 6:
+Active set vector = { 1 1 }
+                      5.4077909902e-02 rmse
+                      1.1466882985e-01 rmse_std
+
+
+Active response data for evaluation 7:
+Active set vector = { 1 1 }
+                      5.2971357016e-02 rmse
+                      1.0834824754e-01 rmse_std
+
+>>>>> Gradients returned to iterator:
+
+Active set vector = { 2 2 } Deriv vars vector = { 1 2 3 }
+ [  3.8341035586e+00 -2.1077443212e+00  5.5327644311e+00 ] rmse gradient
+ [  8.8563547585e+00 -5.9111217971e+00  3.1602911582e+01 ] rmse_std gradient
+
+
+
+---------------------
+Begin Evaluation    8
+---------------------
+Parameters for evaluation 8:
+                      8.9973261817e-02 R
+                      5.0916229340e-01 S
+                      1.0089205311e-01 F
+
+blocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+
+Active response data for evaluation 8:
+Active set vector = { 1 1 }
+                      4.8455209479e-02 rmse
+                      1.0699652276e-01 rmse_std
+
+
+
+------------------------------------------
+Begin Dakota derivative estimation routine
+------------------------------------------
+
+>>>>> Dakota finite difference gradient evaluation for x[1] + h:
+
+---------------------
+Begin Evaluation    9
+---------------------
+Parameters for evaluation 9:
+                      9.0063235079e-02 R
+                      5.0916229340e-01 S
+                      1.0089205311e-01 F
+
+(Asynchronous job 9 added to queue)
+
+
+>>>>> Dakota finite difference gradient evaluation for x[1] - h:
+
+---------------------
+Begin Evaluation   10
+---------------------
+Parameters for evaluation 10:
+                      8.9883288555e-02 R
+                      5.0916229340e-01 S
+                      1.0089205311e-01 F
+
+(Asynchronous job 10 added to queue)
+
+
+>>>>> Dakota finite difference gradient evaluation for x[2] + h:
+
+---------------------
+Begin Evaluation   11
+---------------------
+Parameters for evaluation 11:
+                      8.9973261817e-02 R
+                      5.0967145570e-01 S
+                      1.0089205311e-01 F
+
+(Asynchronous job 11 added to queue)
+
+
+>>>>> Dakota finite difference gradient evaluation for x[2] - h:
+
+---------------------
+Begin Evaluation   12
+---------------------
+Parameters for evaluation 12:
+                      8.9973261817e-02 R
+                      5.0865313111e-01 S
+                      1.0089205311e-01 F
+
+(Asynchronous job 12 added to queue)
+
+
+>>>>> Dakota finite difference gradient evaluation for x[3] + h:
+
+---------------------
+Begin Evaluation   13
+---------------------
+Parameters for evaluation 13:
+                      8.9973261817e-02 R
+                      5.0916229340e-01 S
+                      1.0099294516e-01 F
+
+(Asynchronous job 13 added to queue)
+
+
+>>>>> Dakota finite difference gradient evaluation for x[3] - h:
+
+---------------------
+Begin Evaluation   14
+---------------------
+Parameters for evaluation 14:
+                      8.9973261817e-02 R
+                      5.0916229340e-01 S
+                      1.0079116105e-01 F
+
+(Asynchronous job 14 added to queue)
+
+
+
+Blocking synchronize of 6 asynchronous evaluations
+First pass: initiating 4 local asynchronous jobs
+Initiating evaluation 9
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Initiating evaluation 10
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Initiating evaluation 11
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Initiating evaluation 12
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Second pass: scheduling 2 remaining local asynchronous jobs
+Waiting on completed jobs
+Evaluation 10 has completed
+Initiating evaluation 13
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Waiting on completed jobs
+Evaluation 9 has completed
+Initiating evaluation 14
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Waiting on completed jobs
+Evaluation 12 has completed
+Waiting on completed jobs
+Evaluation 11 has completed
+Waiting on completed jobs
+Evaluation 13 has completed
+Waiting on completed jobs
+Evaluation 14 has completed
+
+Active response data for evaluation 9:
+Active set vector = { 1 1 }
+                      4.7963277374e-02 rmse
+                      1.1052964055e-01 rmse_std
+
+
+Active response data for evaluation 10:
+Active set vector = { 1 1 }
+                      4.9045870796e-02 rmse
+                      1.1299456269e-01 rmse_std
+
+
+Active response data for evaluation 11:
+Active set vector = { 1 1 }
+                      4.6674261246e-02 rmse
+                      1.0697019098e-01 rmse_std
+
+
+Active response data for evaluation 12:
+Active set vector = { 1 1 }
+                      4.8984828177e-02 rmse
+                      1.1255026445e-01 rmse_std
+
+
+Active response data for evaluation 13:
+Active set vector = { 1 1 }
+                      4.8292763066e-02 rmse
+                      1.1345129547e-01 rmse_std
+
+
+Active response data for evaluation 14:
+Active set vector = { 1 1 }
+                      4.7688850788e-02 rmse
+                      1.0396458543e-01 rmse_std
+
+>>>>> Gradients returned to iterator:
+
+Active set vector = { 2 2 } Deriv vars vector = { 1 2 3 }
+ [ -6.0161952587e+00 -2.2689886516e+00  2.9928634617e+00 ] rmse gradient
+ [ -1.3698081426e+01 -5.4796609489e+00  4.7014158965e+01 ] rmse_std gradient
+
+
+
+---------------------
+Begin Evaluation   15
+---------------------
+Parameters for evaluation 15:
+                      9.4620222429e-02 R
+                      5.1840060391e-01 S
+                      1.0104691553e-01 F
+
+blocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+
+Active response data for evaluation 15:
+Active set vector = { 1 1 }
+                      4.7800517351e-02 rmse
+                      1.0638639595e-01 rmse_std
+
+
+
+------------------------------------------
+Begin Dakota derivative estimation routine
+------------------------------------------
+
+>>>>> Dakota finite difference gradient evaluation for x[1] + h:
+
+---------------------
+Begin Evaluation   16
+---------------------
+Parameters for evaluation 16:
+                      9.4714842652e-02 R
+                      5.1840060391e-01 S
+                      1.0104691553e-01 F
+
+(Asynchronous job 16 added to queue)
+
+
+>>>>> Dakota finite difference gradient evaluation for x[1] - h:
+
+---------------------
+Begin Evaluation   17
+---------------------
+Parameters for evaluation 17:
+                      9.4525602207e-02 R
+                      5.1840060391e-01 S
+                      1.0104691553e-01 F
+
+(Asynchronous job 17 added to queue)
+
+
+>>>>> Dakota finite difference gradient evaluation for x[2] + h:
+
+---------------------
+Begin Evaluation   18
+---------------------
+Parameters for evaluation 18:
+                      9.4620222429e-02 R
+                      5.1891900451e-01 S
+                      1.0104691553e-01 F
+
+(Asynchronous job 18 added to queue)
+
+
+>>>>> Dakota finite difference gradient evaluation for x[2] - h:
+
+---------------------
+Begin Evaluation   19
+---------------------
+Parameters for evaluation 19:
+                      9.4620222429e-02 R
+                      5.1788220331e-01 S
+                      1.0104691553e-01 F
+
+(Asynchronous job 19 added to queue)
+
+
+>>>>> Dakota finite difference gradient evaluation for x[3] + h:
+
+---------------------
+Begin Evaluation   20
+---------------------
+Parameters for evaluation 20:
+                      9.4620222429e-02 R
+                      5.1840060391e-01 S
+                      1.0114796244e-01 F
+
+(Asynchronous job 20 added to queue)
+
+
+>>>>> Dakota finite difference gradient evaluation for x[3] - h:
+
+---------------------
+Begin Evaluation   21
+---------------------
+Parameters for evaluation 21:
+                      9.4620222429e-02 R
+                      5.1840060391e-01 S
+                      1.0094586861e-01 F
+
+(Asynchronous job 21 added to queue)
+
+
+
+Blocking synchronize of 6 asynchronous evaluations
+First pass: initiating 4 local asynchronous jobs
+Initiating evaluation 16
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Initiating evaluation 17
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Initiating evaluation 18
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Initiating evaluation 19
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Second pass: scheduling 2 remaining local asynchronous jobs
+Waiting on completed jobs
+Evaluation 16 has completed
+Initiating evaluation 20
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Waiting on completed jobs
+Evaluation 18 has completed
+Initiating evaluation 21
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Waiting on completed jobs
+Evaluation 19 has completed
+Waiting on completed jobs
+Evaluation 17 has completed
+Waiting on completed jobs
+Evaluation 20 has completed
+Waiting on completed jobs
+Evaluation 21 has completed
+
+Active response data for evaluation 16:
+Active set vector = { 1 1 }
+                      4.7624717897e-02 rmse
+                      1.0498001887e-01 rmse_std
+
+
+Active response data for evaluation 17:
+Active set vector = { 1 1 }
+                      4.7491200024e-02 rmse
+                      1.0971401142e-01 rmse_std
+
+
+Active response data for evaluation 18:
+Active set vector = { 1 1 }
+                      4.6881777134e-02 rmse
+                      1.0852608137e-01 rmse_std
+
+
+Active response data for evaluation 19:
+Active set vector = { 1 1 }
+                      4.6686422404e-02 rmse
+                      1.0460008107e-01 rmse_std
+
+
+Active response data for evaluation 20:
+Active set vector = { 1 1 }
+                      4.7739393739e-02 rmse
+                      1.0635888377e-01 rmse_std
+
+
+Active response data for evaluation 21:
+Active set vector = { 1 1 }
+                      4.6694240956e-02 rmse
+                      1.0477222773e-01 rmse_std
+
+>>>>> Gradients returned to iterator:
+
+Active set vector = { 2 2 } Deriv vars vector = { 1 2 3 }
+ [  7.0554618272e-01  1.8842062353e-01  5.1716214091e+00 ] rmse gradient
+ [ -2.5015754731e+01  3.7866471049e+00  7.8510859437e+00 ] rmse_std gradient
+
+
+
+---------------------
+Begin Evaluation   22
+---------------------
+Parameters for evaluation 22:
+                      9.6687065632e-02 R
+                      5.1202713908e-01 S
+                      1.0064082487e-01 F
+
+blocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+
+Active response data for evaluation 22:
+Active set vector = { 1 1 }
+                      5.0462324087e-02 rmse
+                      1.1156894716e-01 rmse_std
+
+
+
+---------------------
+Begin Evaluation   23
+---------------------
+Parameters for evaluation 23:
+                      9.7156722548e-02 R
+                      5.1719601602e-01 S
+                      1.0131213872e-01 F
+
+blocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+
+Active response data for evaluation 23:
+Active set vector = { 1 1 }
+                      4.7101712011e-02 rmse
+                      1.0288893494e-01 rmse_std
+
+
+
+------------------------------------------
+Begin Dakota derivative estimation routine
+------------------------------------------
+
+>>>>> Dakota finite difference gradient evaluation for x[1] + h:
+
+---------------------
+Begin Evaluation   24
+---------------------
+Parameters for evaluation 24:
+                      9.7253879271e-02 R
+                      5.1719601602e-01 S
+                      1.0131213872e-01 F
+
+(Asynchronous job 24 added to queue)
+
+
+>>>>> Dakota finite difference gradient evaluation for x[1] - h:
+
+---------------------
+Begin Evaluation   25
+---------------------
+Parameters for evaluation 25:
+                      9.7059565826e-02 R
+                      5.1719601602e-01 S
+                      1.0131213872e-01 F
+
+(Asynchronous job 25 added to queue)
+
+
+>>>>> Dakota finite difference gradient evaluation for x[2] + h:
+
+---------------------
+Begin Evaluation   26
+---------------------
+Parameters for evaluation 26:
+                      9.7156722548e-02 R
+                      5.1771321204e-01 S
+                      1.0131213872e-01 F
+
+(Asynchronous job 26 added to queue)
+
+
+>>>>> Dakota finite difference gradient evaluation for x[2] - h:
+
+---------------------
+Begin Evaluation   27
+---------------------
+Parameters for evaluation 27:
+                      9.7156722548e-02 R
+                      5.1667882001e-01 S
+                      1.0131213872e-01 F
+
+(Asynchronous job 27 added to queue)
+
+
+>>>>> Dakota finite difference gradient evaluation for x[3] + h:
+
+---------------------
+Begin Evaluation   28
+---------------------
+Parameters for evaluation 28:
+                      9.7156722548e-02 R
+                      5.1719601602e-01 S
+                      1.0141345086e-01 F
+
+(Asynchronous job 28 added to queue)
+
+
+>>>>> Dakota finite difference gradient evaluation for x[3] - h:
+
+---------------------
+Begin Evaluation   29
+---------------------
+Parameters for evaluation 29:
+                      9.7156722548e-02 R
+                      5.1719601602e-01 S
+                      1.0121082658e-01 F
+
+(Asynchronous job 29 added to queue)
+
+
+
+Blocking synchronize of 6 asynchronous evaluations
+First pass: initiating 4 local asynchronous jobs
+Initiating evaluation 24
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Initiating evaluation 25
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Initiating evaluation 26
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Initiating evaluation 27
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Second pass: scheduling 2 remaining local asynchronous jobs
+Waiting on completed jobs
+Evaluation 27 has completed
+Initiating evaluation 28
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Waiting on completed jobs
+Evaluation 26 has completed
+Initiating evaluation 29
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Waiting on completed jobs
+Evaluation 24 has completed
+Waiting on completed jobs
+Evaluation 25 has completed
+Waiting on completed jobs
+Evaluation 28 has completed
+Waiting on completed jobs
+Evaluation 29 has completed
+
+Active response data for evaluation 24:
+Active set vector = { 1 1 }
+                      4.8260766380e-02 rmse
+                      1.0342711931e-01 rmse_std
+
+
+Active response data for evaluation 25:
+Active set vector = { 1 1 }
+                      4.8611539645e-02 rmse
+                      1.0425193135e-01 rmse_std
+
+
+Active response data for evaluation 26:
+Active set vector = { 1 1 }
+                      4.8678969583e-02 rmse
+                      1.0893540396e-01 rmse_std
+
+
+Active response data for evaluation 27:
+Active set vector = { 1 1 }
+                      4.8192923353e-02 rmse
+                      1.0747368442e-01 rmse_std
+
+
+Active response data for evaluation 28:
+Active set vector = { 1 1 }
+                      4.8934230262e-02 rmse
+                      1.0893698546e-01 rmse_std
+
+
+Active response data for evaluation 29:
+Active set vector = { 1 1 }
+                      4.8910846670e-02 rmse
+                      1.0889226664e-01 rmse_std
+
+>>>>> Gradients returned to iterator:
+
+Active set vector = { 2 2 } Deriv vars vector = { 1 2 3 }
+ [ -1.8051929703e+00  4.6988589958e-01  1.1540370454e-01 ] rmse gradient
+ [ -4.2447502365e+00  1.4131194920e+00  2.2069823223e-01 ] rmse_std gradient
+
+
+
+---------------------
+Begin Evaluation   30
+---------------------
+Parameters for evaluation 30:
+                      9.7612672510e-02 R
+                      5.1566094291e-01 S
+                      1.0148125144e-01 F
+
+blocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+
+Active response data for evaluation 30:
+Active set vector = { 1 1 }
+                      4.9194553958e-02 rmse
+                      1.0886143454e-01 rmse_std
+
+
+
+---------------------
+Begin Evaluation   31
+---------------------
+Parameters for evaluation 31:
+                      9.7302892741e-02 R
+                      5.1696924196e-01 S
+                      1.0131270868e-01 F
+
+blocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+
+Active response data for evaluation 31:
+Active set vector = { 1 1 }
+                      5.0382820794e-02 rmse
+                      1.0889627218e-01 rmse_std
+
+
+
+---------------------
+Begin Evaluation   32
+---------------------
+Parameters for evaluation 32:
+                      9.7171367916e-02 R
+                      5.1717336301e-01 S
+                      1.0131194165e-01 F
+
+blocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+
+Active response data for evaluation 32:
+Active set vector = { 1 1 }
+                      4.9036787802e-02 rmse
+                      1.0832013185e-01 rmse_std
+
+
+
+---------------------
+Begin Evaluation   33
+---------------------
+Parameters for evaluation 33:
+                      9.7158186780e-02 R
+                      5.1719375008e-01 S
+                      1.0131211663e-01 F
+
+blocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+
+Active response data for evaluation 33:
+Active set vector = { 1 1 }
+                      4.8713139281e-02 rmse
+                      1.0773713187e-01 rmse_std
+
+
+
+---------------------
+Begin Evaluation   34
+---------------------
+Parameters for evaluation 34:
+                      9.7156868968e-02 R
+                      5.1719578942e-01 S
+                      1.0131213649e-01 F
+
+blocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+
+Active response data for evaluation 34:
+Active set vector = { 1 1 }
+                      4.9006844457e-02 rmse
+                      1.0048814012e-01 rmse_std
+
+
+
+------------------------------------------
+Begin Dakota derivative estimation routine
+------------------------------------------
+
+>>>>> Dakota finite difference gradient evaluation for x[1] + h:
+
+---------------------
+Begin Evaluation   35
+---------------------
+Parameters for evaluation 35:
+                      9.7254025837e-02 R
+                      5.1719578942e-01 S
+                      1.0131213649e-01 F
+
+(Asynchronous job 35 added to queue)
+
+
+>>>>> Dakota finite difference gradient evaluation for x[1] - h:
+
+---------------------
+Begin Evaluation   36
+---------------------
+Parameters for evaluation 36:
+                      9.7059712099e-02 R
+                      5.1719578942e-01 S
+                      1.0131213649e-01 F
+
+(Asynchronous job 36 added to queue)
+
+
+>>>>> Dakota finite difference gradient evaluation for x[2] + h:
+
+---------------------
+Begin Evaluation   37
+---------------------
+Parameters for evaluation 37:
+                      9.7156868968e-02 R
+                      5.1771298521e-01 S
+                      1.0131213649e-01 F
+
+(Asynchronous job 37 added to queue)
+
+
+>>>>> Dakota finite difference gradient evaluation for x[2] - h:
+
+---------------------
+Begin Evaluation   38
+---------------------
+Parameters for evaluation 38:
+                      9.7156868968e-02 R
+                      5.1667859363e-01 S
+                      1.0131213649e-01 F
+
+(Asynchronous job 38 added to queue)
+
+
+>>>>> Dakota finite difference gradient evaluation for x[3] + h:
+
+---------------------
+Begin Evaluation   39
+---------------------
+Parameters for evaluation 39:
+                      9.7156868968e-02 R
+                      5.1719578942e-01 S
+                      1.0141344862e-01 F
+
+(Asynchronous job 39 added to queue)
+
+
+>>>>> Dakota finite difference gradient evaluation for x[3] - h:
+
+---------------------
+Begin Evaluation   40
+---------------------
+Parameters for evaluation 40:
+                      9.7156868968e-02 R
+                      5.1719578942e-01 S
+                      1.0121082435e-01 F
+
+(Asynchronous job 40 added to queue)
+
+
+
+Blocking synchronize of 6 asynchronous evaluations
+First pass: initiating 4 local asynchronous jobs
+Initiating evaluation 35
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Initiating evaluation 36
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Initiating evaluation 37
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Initiating evaluation 38
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Second pass: scheduling 2 remaining local asynchronous jobs
+Waiting on completed jobs
+Evaluation 35 has completed
+Initiating evaluation 39
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Waiting on completed jobs
+Evaluation 37 has completed
+Initiating evaluation 40
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Waiting on completed jobs
+Evaluation 36 has completed
+Waiting on completed jobs
+Evaluation 38 has completed
+Waiting on completed jobs
+Evaluation 39 has completed
+Waiting on completed jobs
+Evaluation 40 has completed
+
+Active response data for evaluation 35:
+Active set vector = { 1 1 }
+                      4.8766313427e-02 rmse
+                      1.0889072870e-01 rmse_std
+
+
+Active response data for evaluation 36:
+Active set vector = { 1 1 }
+                      4.8967741937e-02 rmse
+                      1.1129310394e-01 rmse_std
+
+
+Active response data for evaluation 37:
+Active set vector = { 1 1 }
+                      4.8379789960e-02 rmse
+                      1.0514596191e-01 rmse_std
+
+
+Active response data for evaluation 38:
+Active set vector = { 1 1 }
+                      4.7656788353e-02 rmse
+                      1.0664156704e-01 rmse_std
+
+
+Active response data for evaluation 39:
+Active set vector = { 1 1 }
+                      4.7667588748e-02 rmse
+                      1.0717492009e-01 rmse_std
+
+
+Active response data for evaluation 40:
+Active set vector = { 1 1 }
+                      4.9171123820e-02 rmse
+                      1.0869021023e-01 rmse_std
+
+>>>>> Gradients returned to iterator:
+
+Active set vector = { 2 2 } Deriv vars vector = { 1 2 3 }
+ [ -1.0366148687e+00  6.9896316000e-01 -7.4203107520e+00 ] rmse gradient
+ [ -1.2363383395e+01 -1.4458790671e+00 -7.4783248934e+00 ] rmse_std gradient
+
+
+
+---------------------
+Begin Evaluation   41
+---------------------
+Parameters for evaluation 41:
+                      9.7157110023e-02 R
+                      5.1719621797e-01 S
+                      1.0131223458e-01 F
+
+blocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+
+Active response data for evaluation 41:
+Active set vector = { 1 1 }
+                      4.8216131367e-02 rmse
+                      1.0664868127e-01 rmse_std
+
+
+
+---------------------
+Begin Evaluation   42
+---------------------
+Parameters for evaluation 42:
+                      9.7156898251e-02 R
+                      5.1719581902e-01 S
+                      1.0131214587e-01 F
+
+blocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+
+Active response data for evaluation 42:
+Active set vector = { 1 1 }
+                      4.8781097625e-02 rmse
+                      1.0744889972e-01 rmse_std
+
+
+
+---------------------
+Begin Evaluation   43
+---------------------
+Parameters for evaluation 43:
+                      9.7156872229e-02 R
+                      5.1719579126e-01 S
+                      1.0131213737e-01 F
+
+blocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+
+Active response data for evaluation 43:
+Active set vector = { 1 1 }
+                      4.9331806212e-02 rmse
+                      1.0893194104e-01 rmse_std
+
+
+
+------------------------------------------
+Begin Dakota derivative estimation routine
+------------------------------------------
+
+>>>>> Dakota finite difference gradient evaluation for x[1] + h:
+
+---------------------
+Begin Evaluation   44
+---------------------
+Parameters for evaluation 44:
+                      9.7254025837e-02 R
+                      5.1719578942e-01 S
+                      1.0131213649e-01 F
+
+Duplication detected: analysis_drivers not invoked.
+
+
+>>>>> Dakota finite difference gradient evaluation for x[1] - h:
+
+---------------------
+Begin Evaluation   45
+---------------------
+Parameters for evaluation 45:
+                      9.7059712099e-02 R
+                      5.1719578942e-01 S
+                      1.0131213649e-01 F
+
+Duplication detected: analysis_drivers not invoked.
+
+
+>>>>> Dakota finite difference gradient evaluation for x[2] + h:
+
+---------------------
+Begin Evaluation   46
+---------------------
+Parameters for evaluation 46:
+                      9.7156868968e-02 R
+                      5.1771298521e-01 S
+                      1.0131213649e-01 F
+
+Duplication detected: analysis_drivers not invoked.
+
+
+>>>>> Dakota finite difference gradient evaluation for x[2] - h:
+
+---------------------
+Begin Evaluation   47
+---------------------
+Parameters for evaluation 47:
+                      9.7156868968e-02 R
+                      5.1667859363e-01 S
+                      1.0131213649e-01 F
+
+Duplication detected: analysis_drivers not invoked.
+
+
+>>>>> Dakota finite difference gradient evaluation for x[3] + h:
+
+---------------------
+Begin Evaluation   48
+---------------------
+Parameters for evaluation 48:
+                      9.7156868968e-02 R
+                      5.1719578942e-01 S
+                      1.0141344862e-01 F
+
+Duplication detected: analysis_drivers not invoked.
+
+
+>>>>> Dakota finite difference gradient evaluation for x[3] - h:
+
+---------------------
+Begin Evaluation   49
+---------------------
+Parameters for evaluation 49:
+                      9.7156868968e-02 R
+                      5.1719578942e-01 S
+                      1.0121082435e-01 F
+
+Duplication detected: analysis_drivers not invoked.
+
+
+
+Blocking synchronize of 0 asynchronous evaluations, 0 cached evaluations, and 6 duplicates
+
+Active response data for evaluation 44:
+Active set vector = { 1 1 }
+                      4.8766313427e-02 rmse
+                      1.0889072870e-01 rmse_std
+
+
+Active response data for evaluation 45:
+Active set vector = { 1 1 }
+                      4.8967741937e-02 rmse
+                      1.1129310394e-01 rmse_std
+
+
+Active response data for evaluation 46:
+Active set vector = { 1 1 }
+                      4.8379789960e-02 rmse
+                      1.0514596191e-01 rmse_std
+
+
+Active response data for evaluation 47:
+Active set vector = { 1 1 }
+                      4.7656788353e-02 rmse
+                      1.0664156704e-01 rmse_std
+
+
+Active response data for evaluation 48:
+Active set vector = { 1 1 }
+                      4.7667588748e-02 rmse
+                      1.0717492009e-01 rmse_std
+
+
+Active response data for evaluation 49:
+Active set vector = { 1 1 }
+                      4.9171123820e-02 rmse
+                      1.0869021023e-01 rmse_std
+
+>>>>> Gradients returned to iterator:
+
+Active set vector = { 2 2 } Deriv vars vector = { 1 2 3 }
+ [ -1.0366148687e+00  6.9896316000e-01 -7.4203107520e+00 ] rmse gradient
+ [ -1.2363383395e+01 -1.4458790671e+00 -7.4783248934e+00 ] rmse_std gradient
+
+
+
+Warning: Confidence Interval calculations are not available
+         when number of residuals is less than number of
+         variables.
+
+<<<<< Function evaluation summary: 49 total (43 new, 6 duplicate)
+<<<<< Best parameters          =
+                      9.7156868968e-02 R
+                      5.1719578942e-01 S
+                      1.0131213649e-01 F
+<<<<< Best residual terms =
+                      4.9006844457e-02
+                      1.0048814012e-01
+<<<<< Best residual norm =  1.1180132874e-01; 0.5 * norm^2 =  6.2497685538e-03
+<<<<< Best data captured at function evaluation 34
+
+
+<<<<< Iterator nl2sol completed.
+<<<<< Environment execution completed.
+DAKOTA execution time in seconds:
+  Total CPU        =   0.067185 [parent =   0.067181, child =      4e-06]
+  Total wall clock =    137.227

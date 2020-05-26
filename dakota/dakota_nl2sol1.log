@@ -1,8 +1,33 @@
 
 NONDEFAULT VALUES...
 
-RFCTOL.... V(32) = 0.01000000
+RFCTOL.... V(32) = 0.0001000000
 XCTOL..... V(33) = 1.000000e-05
 XFTOL..... V(34) = 1.000000e-08
-Error(s) encountered reading results file NL2SOL1/run.1/results.out for Evaluation 1:
-Expected 2 gradients but found 0.
+
+    I     INITIAL X(I)       D(I)
+
+    1     0.100000           8.86
+    2     0.500000           5.91
+    3     0.100000           31.6
+
+   IT   NF     F       RELDF    PRELDF   RELDX   MODEL  STPPAR  D*STEP  NPRELDF
+
+    0    1  0.00798 
+    1    2  0.00690    0.14     1.0      0.01      G   -3.e-07  0.1     1.0    
+    2    3  0.00680    0.014    1.0      0.007     G   -3.e-07  0.08    1.0    
+    3    5  0.00640    0.059    0.76     0.007    G-S   0.8     0.07    1.4    
+    4   10  0.00625    0.024    1.8e-05  3.e-07    S    6.e+03  4.e-06  0.038  
+    5   13  0.00625   -0.14     8.9e-07  8.e-09    S    6.e+05  1.e-07  0.0    
+
+***** FALSE CONVERGENCE *****
+
+FUNCTION     0.00624977     RELDX        7.54e-09
+FUNC. EVALS     13          GRAD. EVALS      5
+PRELDF       8.91e-07       NPRELDF      0.00
+
+    I      FINAL X(I)        D(I)          G(I)
+
+    1       0.0971569        26.9       -1.29
+    2       0.517196         11.2       -0.111
+    3       0.101312         48.8       -1.12
