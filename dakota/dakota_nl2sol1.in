@@ -17,7 +17,6 @@ environment
 
 method
   max_iterations = 100
-  convergence_tolerance = 1e-2
   nl2sol
 
 model
@@ -28,6 +27,7 @@ variables
   descriptors "R" "S" "F"
   lower_bounds 0.001 0.001 0.001
   upper_bounds 0.25 1 0.25
+  initial_point 0.1 0.5 0.1
 
 interface
   fork
@@ -37,7 +37,7 @@ interface
     results_file "results.out"
     copy_files "template_dir/*"
 
-    analysis_driver "python model_command_line_driver4.py"
+    analysis_driver "python model_command_line_driver_nl2sol1.py"
 
     work_directory
       named "NL2SOL1/run"
@@ -48,5 +48,7 @@ interface
 responses
   calibration_terms 2
   response_descriptors "rmse" "rmse_std"  # units both just bfr
-  analytic_gradients
+  numerical_gradients
+    method_source dakota
+    interval_type forward  # central
   no_hessians
