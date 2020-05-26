@@ -1,0 +1,4042 @@
+Dakota version 6.11 released Nov 15 2019.
+Repository revision c3efb375 (2019-11-07) built Nov  7 2019 17:32:45.
+Running MPI Dakota executable in serial mode.
+Start time: Tue May 26 15:04:08 2020
+
+-----------------------
+Begin DAKOTA input file
+dakota_ncsu1.in
+-----------------------
+# Dakota input file, uses a moving average approach with a finer scale,
+# combined with a second calibration term based on the std of bug find
+# rates when at low commits (when there is much scatter, and we know N0
+# controls this scatter), i.e., the first exploits the shape and the
+# second exploits the distribution of the response.
+
+# This version iterates on 3 by asking for a more discretised fit to scatter
+# across the sampled space
+
+# This attempts the ncsu dakota method, which does not need gradients
+
+environment
+  tabular_data
+    tabular_data_file "dakota_ncsu1.dat"
+
+method
+  max_iterations = 100
+  ncsu_direct
+
+model
+  single
+
+variables
+  continuous_design 3
+  descriptors "R" "S" "F"
+  lower_bounds 0.001 0.001 0.001
+  upper_bounds 0.25 1 0.25
+  initial_point 0.1 0.5 0.1
+
+interface
+  fork
+    asynchronous
+    evaluation_concurrency 4
+    parameters_file "params.in"
+    results_file "results.out"
+    copy_files "template_dir/*"
+
+    analysis_driver "python model_command_line_driver_nl2sol1.py"  # yes, this is OK
+
+    work_directory
+      named "NCSU1/run"
+      directory_tag
+      directory_save
+      file_save
+
+responses
+  calibration_terms 2
+  response_descriptors "rmse" "rmse_std"  # units both just bfr
+  no_gradients
+  no_hessians
+---------------------
+End DAKOTA input file
+---------------------
+
+Using Dakota input file 'dakota_ncsu1.in'
+Writing new restart file 'dakota_ncsu1.rst'.
+
+>>>>> Executing environment.
+
+>>>>> Running ncsu_direct iterator.
+
+---------------------
+Begin Evaluation    1
+---------------------
+Parameters for evaluation 1:
+                      1.2550000000e-01 R
+                      5.0050000000e-01 S
+                      1.2550000000e-01 F
+
+(Asynchronous job 1 added to queue)
+
+Blocking synchronize of 1 asynchronous evaluations
+First pass: initiating 1 local asynchronous jobs
+Initiating evaluation 1
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Waiting on completed jobs
+Evaluation 1 has completed
+
+Active response data for evaluation 1:
+Active set vector = { 1 1 }
+                      7.2258633134e-02 rmse
+                      1.2475363091e-01 rmse_std
+
+Responses:
+7.2258633134e-02
+1.2475363091e-01
+Weights:
+
+---------------------
+Begin Evaluation    2
+---------------------
+Parameters for evaluation 2:
+                      2.0850000000e-01 R
+                      5.0050000000e-01 S
+                      1.2550000000e-01 F
+
+(Asynchronous job 2 added to queue)
+
+---------------------
+Begin Evaluation    3
+---------------------
+Parameters for evaluation 3:
+                      4.2500000000e-02 R
+                      5.0050000000e-01 S
+                      1.2550000000e-01 F
+
+(Asynchronous job 3 added to queue)
+
+---------------------
+Begin Evaluation    4
+---------------------
+Parameters for evaluation 4:
+                      1.2550000000e-01 R
+                      8.3350000000e-01 S
+                      1.2550000000e-01 F
+
+(Asynchronous job 4 added to queue)
+
+---------------------
+Begin Evaluation    5
+---------------------
+Parameters for evaluation 5:
+                      1.2550000000e-01 R
+                      1.6750000000e-01 S
+                      1.2550000000e-01 F
+
+(Asynchronous job 5 added to queue)
+
+---------------------
+Begin Evaluation    6
+---------------------
+Parameters for evaluation 6:
+                      1.2550000000e-01 R
+                      5.0050000000e-01 S
+                      2.0850000000e-01 F
+
+(Asynchronous job 6 added to queue)
+
+---------------------
+Begin Evaluation    7
+---------------------
+Parameters for evaluation 7:
+                      1.2550000000e-01 R
+                      5.0050000000e-01 S
+                      4.2500000000e-02 F
+
+(Asynchronous job 7 added to queue)
+
+Blocking synchronize of 6 asynchronous evaluations
+First pass: initiating 4 local asynchronous jobs
+Initiating evaluation 2
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Initiating evaluation 3
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Initiating evaluation 4
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Initiating evaluation 5
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Second pass: scheduling 2 remaining local asynchronous jobs
+Waiting on completed jobs
+Evaluation 3 has completed
+Initiating evaluation 6
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Waiting on completed jobs
+Evaluation 4 has completed
+Initiating evaluation 7
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Waiting on completed jobs
+Evaluation 5 has completed
+Waiting on completed jobs
+Evaluation 2 has completed
+Waiting on completed jobs
+Evaluation 6 has completed
+Waiting on completed jobs
+Evaluation 7 has completed
+
+Active response data for evaluation 2:
+Active set vector = { 1 1 }
+                      1.1506520115e-01 rmse
+                      1.3571824519e-01 rmse_std
+
+
+Active response data for evaluation 3:
+Active set vector = { 1 1 }
+                      5.4893158665e-02 rmse
+                      1.2967340851e-01 rmse_std
+
+
+Active response data for evaluation 4:
+Active set vector = { 1 1 }
+                      3.4089310324e-02 rmse
+                      4.8006372681e-02 rmse_std
+
+
+Active response data for evaluation 5:
+Active set vector = { 1 1 }
+                      3.3644833928e-01 rmse
+                      4.4859670262e-01 rmse_std
+
+
+Active response data for evaluation 6:
+Active set vector = { 1 1 }
+                      9.9548015641e-02 rmse
+                      1.6877626115e-01 rmse_std
+
+
+Active response data for evaluation 7:
+Active set vector = { 1 1 }
+                      2.9294869177e-02 rmse
+                      6.7814679535e-02 rmse_std
+
+Responses:
+1.1506520115e-01
+1.3571824519e-01
+Weights:
+Responses:
+5.4893158665e-02
+1.2967340851e-01
+Weights:
+Responses:
+3.4089310324e-02
+4.8006372681e-02
+Weights:
+Responses:
+3.3644833928e-01
+4.4859670262e-01
+Weights:
+Responses:
+9.9548015641e-02
+1.6877626115e-01
+Weights:
+Responses:
+2.9294869177e-02
+6.7814679535e-02
+Weights:
+
+---------------------
+Begin Evaluation    8
+---------------------
+Parameters for evaluation 8:
+                      2.0850000000e-01 R
+                      8.3350000000e-01 S
+                      1.2550000000e-01 F
+
+(Asynchronous job 8 added to queue)
+
+---------------------
+Begin Evaluation    9
+---------------------
+Parameters for evaluation 9:
+                      4.2500000000e-02 R
+                      8.3350000000e-01 S
+                      1.2550000000e-01 F
+
+(Asynchronous job 9 added to queue)
+
+---------------------
+Begin Evaluation   10
+---------------------
+Parameters for evaluation 10:
+                      1.2550000000e-01 R
+                      8.3350000000e-01 S
+                      2.0850000000e-01 F
+
+(Asynchronous job 10 added to queue)
+
+---------------------
+Begin Evaluation   11
+---------------------
+Parameters for evaluation 11:
+                      1.2550000000e-01 R
+                      8.3350000000e-01 S
+                      4.2500000000e-02 F
+
+(Asynchronous job 11 added to queue)
+
+Blocking synchronize of 4 asynchronous evaluations
+First pass: initiating 4 local asynchronous jobs
+Initiating evaluation 8
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Initiating evaluation 9
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Initiating evaluation 10
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Initiating evaluation 11
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Waiting on completed jobs
+Evaluation 9 has completed
+Waiting on completed jobs
+Evaluation 11 has completed
+Waiting on completed jobs
+Evaluation 10 has completed
+Waiting on completed jobs
+Evaluation 8 has completed
+
+Active response data for evaluation 8:
+Active set vector = { 1 1 }
+                      7.9384983013e-02 rmse
+                      4.7900274829e-02 rmse_std
+
+
+Active response data for evaluation 9:
+Active set vector = { 1 1 }
+                      2.4416322899e-02 rmse
+                      5.1124913707e-02 rmse_std
+
+
+Active response data for evaluation 10:
+Active set vector = { 1 1 }
+                      4.2042116732e-02 rmse
+                      6.6698235925e-02 rmse_std
+
+
+Active response data for evaluation 11:
+Active set vector = { 1 1 }
+                      2.2178771027e-02 rmse
+                      4.2135425524e-02 rmse_std
+
+Responses:
+7.9384983013e-02
+4.7900274829e-02
+Weights:
+Responses:
+2.4416322899e-02
+5.1124913707e-02
+Weights:
+Responses:
+4.2042116732e-02
+6.6698235925e-02
+Weights:
+Responses:
+2.2178771027e-02
+4.2135425524e-02
+Weights:
+
+---------------------
+Begin Evaluation   12
+---------------------
+Parameters for evaluation 12:
+                      2.0850000000e-01 R
+                      8.3350000000e-01 S
+                      4.2500000000e-02 F
+
+(Asynchronous job 12 added to queue)
+
+---------------------
+Begin Evaluation   13
+---------------------
+Parameters for evaluation 13:
+                      4.2500000000e-02 R
+                      8.3350000000e-01 S
+                      4.2500000000e-02 F
+
+(Asynchronous job 13 added to queue)
+
+Blocking synchronize of 2 asynchronous evaluations
+First pass: initiating 2 local asynchronous jobs
+Initiating evaluation 12
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Initiating evaluation 13
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Waiting on completed jobs
+Evaluation 13 has completed
+Waiting on completed jobs
+Evaluation 12 has completed
+
+Active response data for evaluation 12:
+Active set vector = { 1 1 }
+                      4.7468802715e-02 rmse
+                      3.2913680353e-02 rmse_std
+
+
+Active response data for evaluation 13:
+Active set vector = { 1 1 }
+                      2.8752622528e-02 rmse
+                      4.5148255097e-02 rmse_std
+
+Responses:
+4.7468802715e-02
+3.2913680353e-02
+Weights:
+Responses:
+2.8752622528e-02
+4.5148255097e-02
+Weights:
+
+---------------------
+Begin Evaluation   14
+---------------------
+Parameters for evaluation 14:
+                      2.0850000000e-01 R
+                      5.0050000000e-01 S
+                      4.2500000000e-02 F
+
+(Asynchronous job 14 added to queue)
+
+---------------------
+Begin Evaluation   15
+---------------------
+Parameters for evaluation 15:
+                      4.2500000000e-02 R
+                      5.0050000000e-01 S
+                      4.2500000000e-02 F
+
+(Asynchronous job 15 added to queue)
+
+Blocking synchronize of 2 asynchronous evaluations
+First pass: initiating 2 local asynchronous jobs
+Initiating evaluation 14
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Initiating evaluation 15
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Waiting on completed jobs
+Evaluation 15 has completed
+Waiting on completed jobs
+Evaluation 14 has completed
+
+Active response data for evaluation 14:
+Active set vector = { 1 1 }
+                      5.8785118023e-02 rmse
+                      6.6961357391e-02 rmse_std
+
+
+Active response data for evaluation 15:
+Active set vector = { 1 1 }
+                      2.3291681202e-02 rmse
+                      6.7294664330e-02 rmse_std
+
+Responses:
+5.8785118023e-02
+6.6961357391e-02
+Weights:
+Responses:
+2.3291681202e-02
+6.7294664330e-02
+Weights:
+
+---------------------
+Begin Evaluation   16
+---------------------
+Parameters for evaluation 16:
+                      1.5316666667e-01 R
+                      8.3350000000e-01 S
+                      4.2500000000e-02 F
+
+(Asynchronous job 16 added to queue)
+
+---------------------
+Begin Evaluation   17
+---------------------
+Parameters for evaluation 17:
+                      9.7833333333e-02 R
+                      8.3350000000e-01 S
+                      4.2500000000e-02 F
+
+(Asynchronous job 17 added to queue)
+
+---------------------
+Begin Evaluation   18
+---------------------
+Parameters for evaluation 18:
+                      1.2550000000e-01 R
+                      9.4450000000e-01 S
+                      4.2500000000e-02 F
+
+(Asynchronous job 18 added to queue)
+
+---------------------
+Begin Evaluation   19
+---------------------
+Parameters for evaluation 19:
+                      1.2550000000e-01 R
+                      7.2250000000e-01 S
+                      4.2500000000e-02 F
+
+(Asynchronous job 19 added to queue)
+
+---------------------
+Begin Evaluation   20
+---------------------
+Parameters for evaluation 20:
+                      1.2550000000e-01 R
+                      8.3350000000e-01 S
+                      7.0166666667e-02 F
+
+(Asynchronous job 20 added to queue)
+
+---------------------
+Begin Evaluation   21
+---------------------
+Parameters for evaluation 21:
+                      1.2550000000e-01 R
+                      8.3350000000e-01 S
+                      1.4833333333e-02 F
+
+(Asynchronous job 21 added to queue)
+
+Blocking synchronize of 6 asynchronous evaluations
+First pass: initiating 4 local asynchronous jobs
+Initiating evaluation 16
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Initiating evaluation 17
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Initiating evaluation 18
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Initiating evaluation 19
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Second pass: scheduling 2 remaining local asynchronous jobs
+Waiting on completed jobs
+Evaluation 17 has completed
+Initiating evaluation 20
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Waiting on completed jobs
+Evaluation 18 has completed
+Initiating evaluation 21
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Waiting on completed jobs
+Evaluation 19 has completed
+Waiting on completed jobs
+Evaluation 16 has completed
+Waiting on completed jobs
+Evaluation 20 has completed
+Waiting on completed jobs
+Evaluation 21 has completed
+
+Active response data for evaluation 16:
+Active set vector = { 1 1 }
+                      2.8990104057e-02 rmse
+                      3.7133187153e-02 rmse_std
+
+
+Active response data for evaluation 17:
+Active set vector = { 1 1 }
+                      1.9785266837e-02 rmse
+                      4.3584510756e-02 rmse_std
+
+
+Active response data for evaluation 18:
+Active set vector = { 1 1 }
+                      2.3709166542e-02 rmse
+                      4.7822570227e-02 rmse_std
+
+
+Active response data for evaluation 19:
+Active set vector = { 1 1 }
+                      2.1689522935e-02 rmse
+                      4.8496425053e-02 rmse_std
+
+
+Active response data for evaluation 20:
+Active set vector = { 1 1 }
+                      2.6848803907e-02 rmse
+                      4.2934730957e-02 rmse_std
+
+
+Active response data for evaluation 21:
+Active set vector = { 1 1 }
+                      2.3543607374e-02 rmse
+                      4.8221411377e-02 rmse_std
+
+Responses:
+2.8990104057e-02
+3.7133187153e-02
+Weights:
+Responses:
+1.9785266837e-02
+4.3584510756e-02
+Weights:
+Responses:
+2.3709166542e-02
+4.7822570227e-02
+Weights:
+Responses:
+2.1689522935e-02
+4.8496425053e-02
+Weights:
+Responses:
+2.6848803907e-02
+4.2934730957e-02
+Weights:
+Responses:
+2.3543607374e-02
+4.8221411377e-02
+Weights:
+
+---------------------
+Begin Evaluation   22
+---------------------
+Parameters for evaluation 22:
+                      2.0850000000e-01 R
+                      8.3350000000e-01 S
+                      2.0850000000e-01 F
+
+(Asynchronous job 22 added to queue)
+
+---------------------
+Begin Evaluation   23
+---------------------
+Parameters for evaluation 23:
+                      4.2500000000e-02 R
+                      8.3350000000e-01 S
+                      2.0850000000e-01 F
+
+(Asynchronous job 23 added to queue)
+
+Blocking synchronize of 2 asynchronous evaluations
+First pass: initiating 2 local asynchronous jobs
+Initiating evaluation 22
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Initiating evaluation 23
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Waiting on completed jobs
+Evaluation 23 has completed
+Waiting on completed jobs
+Evaluation 22 has completed
+
+Active response data for evaluation 22:
+Active set vector = { 1 1 }
+                      9.4540144054e-02 rmse
+                      6.6232400417e-02 rmse_std
+
+
+Active response data for evaluation 23:
+Active set vector = { 1 1 }
+                      2.4386546374e-02 rmse
+                      6.5469455386e-02 rmse_std
+
+Responses:
+9.4540144054e-02
+6.6232400417e-02
+Weights:
+Responses:
+2.4386546374e-02
+6.5469455386e-02
+Weights:
+
+---------------------
+Begin Evaluation   24
+---------------------
+Parameters for evaluation 24:
+                      1.5316666667e-01 R
+                      9.4450000000e-01 S
+                      4.2500000000e-02 F
+
+(Asynchronous job 24 added to queue)
+
+---------------------
+Begin Evaluation   25
+---------------------
+Parameters for evaluation 25:
+                      1.5316666667e-01 R
+                      7.2250000000e-01 S
+                      4.2500000000e-02 F
+
+(Asynchronous job 25 added to queue)
+
+---------------------
+Begin Evaluation   26
+---------------------
+Parameters for evaluation 26:
+                      1.5316666667e-01 R
+                      8.3350000000e-01 S
+                      7.0166666667e-02 F
+
+(Asynchronous job 26 added to queue)
+
+---------------------
+Begin Evaluation   27
+---------------------
+Parameters for evaluation 27:
+                      1.5316666667e-01 R
+                      8.3350000000e-01 S
+                      1.4833333333e-02 F
+
+(Asynchronous job 27 added to queue)
+
+Blocking synchronize of 4 asynchronous evaluations
+First pass: initiating 4 local asynchronous jobs
+Initiating evaluation 24
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Initiating evaluation 25
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Initiating evaluation 26
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Initiating evaluation 27
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Waiting on completed jobs
+Evaluation 24 has completed
+Waiting on completed jobs
+Evaluation 26 has completed
+Waiting on completed jobs
+Evaluation 27 has completed
+Waiting on completed jobs
+Evaluation 25 has completed
+
+Active response data for evaluation 24:
+Active set vector = { 1 1 }
+                      2.8932825774e-02 rmse
+                      4.4880485310e-02 rmse_std
+
+
+Active response data for evaluation 25:
+Active set vector = { 1 1 }
+                      2.9567900565e-02 rmse
+                      4.2899526359e-02 rmse_std
+
+
+Active response data for evaluation 26:
+Active set vector = { 1 1 }
+                      3.7008737952e-02 rmse
+                      3.9861671445e-02 rmse_std
+
+
+Active response data for evaluation 27:
+Active set vector = { 1 1 }
+                      2.3206989309e-02 rmse
+                      4.5549433353e-02 rmse_std
+
+Responses:
+2.8932825774e-02
+4.4880485310e-02
+Weights:
+Responses:
+2.9567900565e-02
+4.2899526359e-02
+Weights:
+Responses:
+3.7008737952e-02
+3.9861671445e-02
+Weights:
+Responses:
+2.3206989309e-02
+4.5549433353e-02
+Weights:
+
+---------------------
+Begin Evaluation   28
+---------------------
+Parameters for evaluation 28:
+                      2.0850000000e-01 R
+                      5.0050000000e-01 S
+                      2.0850000000e-01 F
+
+(Asynchronous job 28 added to queue)
+
+---------------------
+Begin Evaluation   29
+---------------------
+Parameters for evaluation 29:
+                      4.2500000000e-02 R
+                      5.0050000000e-01 S
+                      2.0850000000e-01 F
+
+(Asynchronous job 29 added to queue)
+
+Blocking synchronize of 2 asynchronous evaluations
+First pass: initiating 2 local asynchronous jobs
+Initiating evaluation 28
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Initiating evaluation 29
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Waiting on completed jobs
+Evaluation 29 has completed
+Waiting on completed jobs
+Evaluation 28 has completed
+
+Active response data for evaluation 28:
+Active set vector = { 1 1 }
+                      1.4618937722e-01 rmse
+                      1.7813385358e-01 rmse_std
+
+
+Active response data for evaluation 29:
+Active set vector = { 1 1 }
+                      7.8258321962e-02 rmse
+                      1.7229550846e-01 rmse_std
+
+Responses:
+1.4618937722e-01
+1.7813385358e-01
+Weights:
+Responses:
+7.8258321962e-02
+1.7229550846e-01
+Weights:
+
+---------------------
+Begin Evaluation   30
+---------------------
+Parameters for evaluation 30:
+                      9.7833333333e-02 R
+                      9.4450000000e-01 S
+                      4.2500000000e-02 F
+
+(Asynchronous job 30 added to queue)
+
+---------------------
+Begin Evaluation   31
+---------------------
+Parameters for evaluation 31:
+                      9.7833333333e-02 R
+                      7.2250000000e-01 S
+                      4.2500000000e-02 F
+
+(Asynchronous job 31 added to queue)
+
+---------------------
+Begin Evaluation   32
+---------------------
+Parameters for evaluation 32:
+                      9.7833333333e-02 R
+                      8.3350000000e-01 S
+                      7.0166666667e-02 F
+
+(Asynchronous job 32 added to queue)
+
+---------------------
+Begin Evaluation   33
+---------------------
+Parameters for evaluation 33:
+                      9.7833333333e-02 R
+                      8.3350000000e-01 S
+                      1.4833333333e-02 F
+
+(Asynchronous job 33 added to queue)
+
+Blocking synchronize of 4 asynchronous evaluations
+First pass: initiating 4 local asynchronous jobs
+Initiating evaluation 30
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Initiating evaluation 31
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Initiating evaluation 32
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Initiating evaluation 33
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Waiting on completed jobs
+Evaluation 33 has completed
+Waiting on completed jobs
+Evaluation 30 has completed
+Waiting on completed jobs
+Evaluation 31 has completed
+Waiting on completed jobs
+Evaluation 32 has completed
+
+Active response data for evaluation 30:
+Active set vector = { 1 1 }
+                      2.2755554655e-02 rmse
+                      5.0935042414e-02 rmse_std
+
+
+Active response data for evaluation 31:
+Active set vector = { 1 1 }
+                      1.8086882554e-02 rmse
+                      4.8082276034e-02 rmse_std
+
+
+Active response data for evaluation 32:
+Active set vector = { 1 1 }
+                      1.9284002789e-02 rmse
+                      4.4171256713e-02 rmse_std
+
+
+Active response data for evaluation 33:
+Active set vector = { 1 1 }
+                      2.6052768791e-02 rmse
+                      5.1690921140e-02 rmse_std
+
+Responses:
+2.2755554655e-02
+5.0935042414e-02
+Weights:
+Responses:
+1.8086882554e-02
+4.8082276034e-02
+Weights:
+Responses:
+1.9284002789e-02
+4.4171256713e-02
+Weights:
+Responses:
+2.6052768791e-02
+5.1690921140e-02
+Weights:
+
+---------------------
+Begin Evaluation   34
+---------------------
+Parameters for evaluation 34:
+                      1.6238888889e-01 R
+                      8.3350000000e-01 S
+                      4.2500000000e-02 F
+
+(Asynchronous job 34 added to queue)
+
+---------------------
+Begin Evaluation   35
+---------------------
+Parameters for evaluation 35:
+                      1.4394444444e-01 R
+                      8.3350000000e-01 S
+                      4.2500000000e-02 F
+
+(Asynchronous job 35 added to queue)
+
+---------------------
+Begin Evaluation   36
+---------------------
+Parameters for evaluation 36:
+                      1.5316666667e-01 R
+                      8.7050000000e-01 S
+                      4.2500000000e-02 F
+
+(Asynchronous job 36 added to queue)
+
+---------------------
+Begin Evaluation   37
+---------------------
+Parameters for evaluation 37:
+                      1.5316666667e-01 R
+                      7.9650000000e-01 S
+                      4.2500000000e-02 F
+
+(Asynchronous job 37 added to queue)
+
+---------------------
+Begin Evaluation   38
+---------------------
+Parameters for evaluation 38:
+                      1.5316666667e-01 R
+                      8.3350000000e-01 S
+                      5.1722222222e-02 F
+
+(Asynchronous job 38 added to queue)
+
+---------------------
+Begin Evaluation   39
+---------------------
+Parameters for evaluation 39:
+                      1.5316666667e-01 R
+                      8.3350000000e-01 S
+                      3.3277777778e-02 F
+
+(Asynchronous job 39 added to queue)
+
+Blocking synchronize of 6 asynchronous evaluations
+First pass: initiating 4 local asynchronous jobs
+Initiating evaluation 34
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Initiating evaluation 35
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Initiating evaluation 36
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Initiating evaluation 37
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Second pass: scheduling 2 remaining local asynchronous jobs
+Waiting on completed jobs
+Evaluation 35 has completed
+Initiating evaluation 38
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Waiting on completed jobs
+Evaluation 37 has completed
+Initiating evaluation 39
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Waiting on completed jobs
+Evaluation 34 has completed
+Waiting on completed jobs
+Evaluation 36 has completed
+Waiting on completed jobs
+Evaluation 38 has completed
+Waiting on completed jobs
+Evaluation 39 has completed
+
+Active response data for evaluation 34:
+Active set vector = { 1 1 }
+                      3.1913724972e-02 rmse
+                      4.0037413273e-02 rmse_std
+
+
+Active response data for evaluation 35:
+Active set vector = { 1 1 }
+                      2.6149255003e-02 rmse
+                      4.4601148691e-02 rmse_std
+
+
+Active response data for evaluation 36:
+Active set vector = { 1 1 }
+                      2.9033499449e-02 rmse
+                      4.2140964087e-02 rmse_std
+
+
+Active response data for evaluation 37:
+Active set vector = { 1 1 }
+                      2.9295531827e-02 rmse
+                      4.1095891327e-02 rmse_std
+
+
+Active response data for evaluation 38:
+Active set vector = { 1 1 }
+                      3.1863062845e-02 rmse
+                      3.9612407211e-02 rmse_std
+
+
+Active response data for evaluation 39:
+Active set vector = { 1 1 }
+                      2.6285295844e-02 rmse
+                      3.7942665339e-02 rmse_std
+
+Responses:
+3.1913724972e-02
+4.0037413273e-02
+Weights:
+Responses:
+2.6149255003e-02
+4.4601148691e-02
+Weights:
+Responses:
+2.9033499449e-02
+4.2140964087e-02
+Weights:
+Responses:
+2.9295531827e-02
+4.1095891327e-02
+Weights:
+Responses:
+3.1863062845e-02
+3.9612407211e-02
+Weights:
+Responses:
+2.6285295844e-02
+3.7942665339e-02
+Weights:
+
+---------------------
+Begin Evaluation   40
+---------------------
+Parameters for evaluation 40:
+                      2.0850000000e-01 R
+                      1.6750000000e-01 S
+                      1.2550000000e-01 F
+
+(Asynchronous job 40 added to queue)
+
+---------------------
+Begin Evaluation   41
+---------------------
+Parameters for evaluation 41:
+                      4.2500000000e-02 R
+                      1.6750000000e-01 S
+                      1.2550000000e-01 F
+
+(Asynchronous job 41 added to queue)
+
+---------------------
+Begin Evaluation   42
+---------------------
+Parameters for evaluation 42:
+                      1.2550000000e-01 R
+                      1.6750000000e-01 S
+                      2.0850000000e-01 F
+
+(Asynchronous job 42 added to queue)
+
+---------------------
+Begin Evaluation   43
+---------------------
+Parameters for evaluation 43:
+                      1.2550000000e-01 R
+                      1.6750000000e-01 S
+                      4.2500000000e-02 F
+
+(Asynchronous job 43 added to queue)
+
+Blocking synchronize of 4 asynchronous evaluations
+First pass: initiating 4 local asynchronous jobs
+Initiating evaluation 40
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Initiating evaluation 41
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Initiating evaluation 42
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Initiating evaluation 43
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Waiting on completed jobs
+Evaluation 41 has completed
+Waiting on completed jobs
+Evaluation 42 has completed
+Waiting on completed jobs
+Evaluation 43 has completed
+Waiting on completed jobs
+Evaluation 40 has completed
+
+Active response data for evaluation 40:
+Active set vector = { 1 1 }
+                      3.6485454685e-01 rmse
+                      4.5402686084e-01 rmse_std
+
+
+Active response data for evaluation 41:
+Active set vector = { 1 1 }
+                      3.2304904789e-01 rmse
+                      4.6302043771e-01 rmse_std
+
+
+Active response data for evaluation 42:
+Active set vector = { 1 1 }
+                      4.6380848056e-01 rmse
+                      6.2440553808e-01 rmse_std
+
+
+Active response data for evaluation 43:
+Active set vector = { 1 1 }
+                      1.4324545178e-01 rmse
+                      2.1014429175e-01 rmse_std
+
+Responses:
+3.6485454685e-01
+4.5402686084e-01
+Weights:
+Responses:
+3.2304904789e-01
+4.6302043771e-01
+Weights:
+Responses:
+4.6380848056e-01
+6.2440553808e-01
+Weights:
+Responses:
+1.4324545178e-01
+2.1014429175e-01
+Weights:
+
+---------------------
+Begin Evaluation   44
+---------------------
+Parameters for evaluation 44:
+                      9.7833333333e-02 R
+                      9.4450000000e-01 S
+                      7.0166666667e-02 F
+
+(Asynchronous job 44 added to queue)
+
+---------------------
+Begin Evaluation   45
+---------------------
+Parameters for evaluation 45:
+                      9.7833333333e-02 R
+                      7.2250000000e-01 S
+                      7.0166666667e-02 F
+
+(Asynchronous job 45 added to queue)
+
+Blocking synchronize of 2 asynchronous evaluations
+First pass: initiating 2 local asynchronous jobs
+Initiating evaluation 44
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Initiating evaluation 45
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Waiting on completed jobs
+Evaluation 44 has completed
+Waiting on completed jobs
+Evaluation 45 has completed
+
+Active response data for evaluation 44:
+Active set vector = { 1 1 }
+                      2.2143031158e-02 rmse
+                      4.7658173920e-02 rmse_std
+
+
+Active response data for evaluation 45:
+Active set vector = { 1 1 }
+                      2.0529997181e-02 rmse
+                      5.0788485559e-02 rmse_std
+
+Responses:
+2.2143031158e-02
+4.7658173920e-02
+Weights:
+Responses:
+2.0529997181e-02
+5.0788485559e-02
+Weights:
+
+---------------------
+Begin Evaluation   46
+---------------------
+Parameters for evaluation 46:
+                      1.6238888889e-01 R
+                      8.3350000000e-01 S
+                      3.3277777778e-02 F
+
+(Asynchronous job 46 added to queue)
+
+---------------------
+Begin Evaluation   47
+---------------------
+Parameters for evaluation 47:
+                      1.4394444444e-01 R
+                      8.3350000000e-01 S
+                      3.3277777778e-02 F
+
+(Asynchronous job 47 added to queue)
+
+---------------------
+Begin Evaluation   48
+---------------------
+Parameters for evaluation 48:
+                      1.5316666667e-01 R
+                      8.7050000000e-01 S
+                      3.3277777778e-02 F
+
+(Asynchronous job 48 added to queue)
+
+---------------------
+Begin Evaluation   49
+---------------------
+Parameters for evaluation 49:
+                      1.5316666667e-01 R
+                      7.9650000000e-01 S
+                      3.3277777778e-02 F
+
+(Asynchronous job 49 added to queue)
+
+Blocking synchronize of 4 asynchronous evaluations
+First pass: initiating 4 local asynchronous jobs
+Initiating evaluation 46
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Initiating evaluation 47
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Initiating evaluation 48
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Initiating evaluation 49
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Waiting on completed jobs
+Evaluation 49 has completed
+Waiting on completed jobs
+Evaluation 47 has completed
+Waiting on completed jobs
+Evaluation 46 has completed
+Waiting on completed jobs
+Evaluation 48 has completed
+
+Active response data for evaluation 46:
+Active set vector = { 1 1 }
+                      2.7810005247e-02 rmse
+                      3.9850620966e-02 rmse_std
+
+
+Active response data for evaluation 47:
+Active set vector = { 1 1 }
+                      2.4091611919e-02 rmse
+                      4.1081884842e-02 rmse_std
+
+
+Active response data for evaluation 48:
+Active set vector = { 1 1 }
+                      2.6351434921e-02 rmse
+                      4.0327904473e-02 rmse_std
+
+
+Active response data for evaluation 49:
+Active set vector = { 1 1 }
+                      2.5697121578e-02 rmse
+                      4.0294528566e-02 rmse_std
+
+Responses:
+2.7810005247e-02
+3.9850620966e-02
+Weights:
+Responses:
+2.4091611919e-02
+4.1081884842e-02
+Weights:
+Responses:
+2.6351434921e-02
+4.0327904473e-02
+Weights:
+Responses:
+2.5697121578e-02
+4.0294528566e-02
+Weights:
+
+---------------------
+Begin Evaluation   50
+---------------------
+Parameters for evaluation 50:
+                      2.0850000000e-01 R
+                      1.6750000000e-01 S
+                      4.2500000000e-02 F
+
+(Asynchronous job 50 added to queue)
+
+---------------------
+Begin Evaluation   51
+---------------------
+Parameters for evaluation 51:
+                      4.2500000000e-02 R
+                      1.6750000000e-01 S
+                      4.2500000000e-02 F
+
+(Asynchronous job 51 added to queue)
+
+Blocking synchronize of 2 asynchronous evaluations
+First pass: initiating 2 local asynchronous jobs
+Initiating evaluation 50
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Initiating evaluation 51
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Waiting on completed jobs
+Evaluation 51 has completed
+Waiting on completed jobs
+Evaluation 50 has completed
+
+Active response data for evaluation 50:
+Active set vector = { 1 1 }
+                      1.6437731656e-01 rmse
+                      2.1127264141e-01 rmse_std
+
+
+Active response data for evaluation 51:
+Active set vector = { 1 1 }
+                      1.3104437336e-01 rmse
+                      2.0911994747e-01 rmse_std
+
+Responses:
+1.6437731656e-01
+2.1127264141e-01
+Weights:
+Responses:
+1.3104437336e-01
+2.0911994747e-01
+Weights:
+
+---------------------
+Begin Evaluation   52
+---------------------
+Parameters for evaluation 52:
+                      1.2550000000e-01 R
+                      9.4450000000e-01 S
+                      7.0166666667e-02 F
+
+(Asynchronous job 52 added to queue)
+
+---------------------
+Begin Evaluation   53
+---------------------
+Parameters for evaluation 53:
+                      1.2550000000e-01 R
+                      7.2250000000e-01 S
+                      7.0166666667e-02 F
+
+(Asynchronous job 53 added to queue)
+
+Blocking synchronize of 2 asynchronous evaluations
+First pass: initiating 2 local asynchronous jobs
+Initiating evaluation 52
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Initiating evaluation 53
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Waiting on completed jobs
+Evaluation 52 has completed
+Waiting on completed jobs
+Evaluation 53 has completed
+
+Active response data for evaluation 52:
+Active set vector = { 1 1 }
+                      2.6994378317e-02 rmse
+                      4.5129299348e-02 rmse_std
+
+
+Active response data for evaluation 53:
+Active set vector = { 1 1 }
+                      2.8981392046e-02 rmse
+                      5.5953623077e-02 rmse_std
+
+Responses:
+2.6994378317e-02
+4.5129299348e-02
+Weights:
+Responses:
+2.8981392046e-02
+5.5953623077e-02
+Weights:
+
+---------------------
+Begin Evaluation   54
+---------------------
+Parameters for evaluation 54:
+                      1.5624074074e-01 R
+                      8.3350000000e-01 S
+                      3.3277777778e-02 F
+
+(Asynchronous job 54 added to queue)
+
+---------------------
+Begin Evaluation   55
+---------------------
+Parameters for evaluation 55:
+                      1.5009259259e-01 R
+                      8.3350000000e-01 S
+                      3.3277777778e-02 F
+
+(Asynchronous job 55 added to queue)
+
+---------------------
+Begin Evaluation   56
+---------------------
+Parameters for evaluation 56:
+                      1.5316666667e-01 R
+                      8.4583333333e-01 S
+                      3.3277777778e-02 F
+
+(Asynchronous job 56 added to queue)
+
+---------------------
+Begin Evaluation   57
+---------------------
+Parameters for evaluation 57:
+                      1.5316666667e-01 R
+                      8.2116666667e-01 S
+                      3.3277777778e-02 F
+
+(Asynchronous job 57 added to queue)
+
+---------------------
+Begin Evaluation   58
+---------------------
+Parameters for evaluation 58:
+                      1.5316666667e-01 R
+                      8.3350000000e-01 S
+                      3.6351851852e-02 F
+
+(Asynchronous job 58 added to queue)
+
+---------------------
+Begin Evaluation   59
+---------------------
+Parameters for evaluation 59:
+                      1.5316666667e-01 R
+                      8.3350000000e-01 S
+                      3.0203703704e-02 F
+
+(Asynchronous job 59 added to queue)
+
+Blocking synchronize of 6 asynchronous evaluations
+First pass: initiating 4 local asynchronous jobs
+Initiating evaluation 54
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Initiating evaluation 55
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Initiating evaluation 56
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Initiating evaluation 57
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Second pass: scheduling 2 remaining local asynchronous jobs
+Waiting on completed jobs
+Evaluation 55 has completed
+Initiating evaluation 58
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Waiting on completed jobs
+Evaluation 54 has completed
+Initiating evaluation 59
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Waiting on completed jobs
+Evaluation 56 has completed
+Waiting on completed jobs
+Evaluation 57 has completed
+Waiting on completed jobs
+Evaluation 58 has completed
+Waiting on completed jobs
+Evaluation 59 has completed
+
+Active response data for evaluation 54:
+Active set vector = { 1 1 }
+                      2.6869850592e-02 rmse
+                      4.2131131756e-02 rmse_std
+
+
+Active response data for evaluation 55:
+Active set vector = { 1 1 }
+                      2.5570655279e-02 rmse
+                      3.9744346684e-02 rmse_std
+
+
+Active response data for evaluation 56:
+Active set vector = { 1 1 }
+                      2.6244189626e-02 rmse
+                      3.8043074939e-02 rmse_std
+
+
+Active response data for evaluation 57:
+Active set vector = { 1 1 }
+                      2.6042867881e-02 rmse
+                      3.9616474254e-02 rmse_std
+
+
+Active response data for evaluation 58:
+Active set vector = { 1 1 }
+                      2.6362549502e-02 rmse
+                      3.9022506499e-02 rmse_std
+
+
+Active response data for evaluation 59:
+Active set vector = { 1 1 }
+                      2.5006886706e-02 rmse
+                      4.0721320949e-02 rmse_std
+
+Responses:
+2.6869850592e-02
+4.2131131756e-02
+Weights:
+Responses:
+2.5570655279e-02
+3.9744346684e-02
+Weights:
+Responses:
+2.6244189626e-02
+3.8043074939e-02
+Weights:
+Responses:
+2.6042867881e-02
+3.9616474254e-02
+Weights:
+Responses:
+2.6362549502e-02
+3.9022506499e-02
+Weights:
+Responses:
+2.5006886706e-02
+4.0721320949e-02
+Weights:
+
+---------------------
+Begin Evaluation   60
+---------------------
+Parameters for evaluation 60:
+                      2.0850000000e-01 R
+                      1.6750000000e-01 S
+                      2.0850000000e-01 F
+
+(Asynchronous job 60 added to queue)
+
+---------------------
+Begin Evaluation   61
+---------------------
+Parameters for evaluation 61:
+                      4.2500000000e-02 R
+                      1.6750000000e-01 S
+                      2.0850000000e-01 F
+
+(Asynchronous job 61 added to queue)
+
+Blocking synchronize of 2 asynchronous evaluations
+First pass: initiating 2 local asynchronous jobs
+Initiating evaluation 60
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Initiating evaluation 61
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Waiting on completed jobs
+Evaluation 61 has completed
+Waiting on completed jobs
+Evaluation 60 has completed
+
+Active response data for evaluation 60:
+Active set vector = { 1 1 }
+                      4.9305845361e-01 rmse
+                      6.2544506532e-01 rmse_std
+
+
+Active response data for evaluation 61:
+Active set vector = { 1 1 }
+                      4.4974982336e-01 rmse
+                      6.3649405797e-01 rmse_std
+
+Responses:
+4.9305845361e-01
+6.2544506532e-01
+Weights:
+Responses:
+4.4974982336e-01
+6.3649405797e-01
+Weights:
+
+---------------------
+Begin Evaluation   62
+---------------------
+Parameters for evaluation 62:
+                      1.5316666667e-01 R
+                      9.4450000000e-01 S
+                      1.4833333333e-02 F
+
+(Asynchronous job 62 added to queue)
+
+---------------------
+Begin Evaluation   63
+---------------------
+Parameters for evaluation 63:
+                      1.5316666667e-01 R
+                      7.2250000000e-01 S
+                      1.4833333333e-02 F
+
+(Asynchronous job 63 added to queue)
+
+Blocking synchronize of 2 asynchronous evaluations
+First pass: initiating 2 local asynchronous jobs
+Initiating evaluation 62
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Initiating evaluation 63
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Waiting on completed jobs
+Evaluation 62 has completed
+Waiting on completed jobs
+Evaluation 63 has completed
+
+Active response data for evaluation 62:
+Active set vector = { 1 1 }
+                      2.4225500871e-02 rmse
+                      5.1540488790e-02 rmse_std
+
+
+Active response data for evaluation 63:
+Active set vector = { 1 1 }
+                      2.1639176233e-02 rmse
+                      4.1594271910e-02 rmse_std
+
+Responses:
+2.4225500871e-02
+5.1540488790e-02
+Weights:
+Responses:
+2.1639176233e-02
+4.1594271910e-02
+Weights:
+
+---------------------
+Begin Evaluation   64
+---------------------
+Parameters for evaluation 64:
+                      1.5624074074e-01 R
+                      8.4583333333e-01 S
+                      3.3277777778e-02 F
+
+(Asynchronous job 64 added to queue)
+
+---------------------
+Begin Evaluation   65
+---------------------
+Parameters for evaluation 65:
+                      1.5009259259e-01 R
+                      8.4583333333e-01 S
+                      3.3277777778e-02 F
+
+(Asynchronous job 65 added to queue)
+
+---------------------
+Begin Evaluation   66
+---------------------
+Parameters for evaluation 66:
+                      1.5316666667e-01 R
+                      8.4583333333e-01 S
+                      3.6351851852e-02 F
+
+(Asynchronous job 66 added to queue)
+
+---------------------
+Begin Evaluation   67
+---------------------
+Parameters for evaluation 67:
+                      1.5316666667e-01 R
+                      8.4583333333e-01 S
+                      3.0203703704e-02 F
+
+(Asynchronous job 67 added to queue)
+
+Blocking synchronize of 4 asynchronous evaluations
+First pass: initiating 4 local asynchronous jobs
+Initiating evaluation 64
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Initiating evaluation 65
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Initiating evaluation 66
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Initiating evaluation 67
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Waiting on completed jobs
+Evaluation 66 has completed
+Waiting on completed jobs
+Evaluation 65 has completed
+Waiting on completed jobs
+Evaluation 67 has completed
+Waiting on completed jobs
+Evaluation 64 has completed
+
+Active response data for evaluation 64:
+Active set vector = { 1 1 }
+                      2.7059292054e-02 rmse
+                      3.9227739890e-02 rmse_std
+
+
+Active response data for evaluation 65:
+Active set vector = { 1 1 }
+                      2.5496637537e-02 rmse
+                      4.4123699932e-02 rmse_std
+
+
+Active response data for evaluation 66:
+Active set vector = { 1 1 }
+                      2.7077115033e-02 rmse
+                      4.2734268973e-02 rmse_std
+
+
+Active response data for evaluation 67:
+Active set vector = { 1 1 }
+                      2.5702520222e-02 rmse
+                      4.1558991311e-02 rmse_std
+
+Responses:
+2.7059292054e-02
+3.9227739890e-02
+Weights:
+Responses:
+2.5496637537e-02
+4.4123699932e-02
+Weights:
+Responses:
+2.7077115033e-02
+4.2734268973e-02
+Weights:
+Responses:
+2.5702520222e-02
+4.1558991311e-02
+Weights:
+
+---------------------
+Begin Evaluation   68
+---------------------
+Parameters for evaluation 68:
+                      1.5419135802e-01 R
+                      8.3350000000e-01 S
+                      3.3277777778e-02 F
+
+(Asynchronous job 68 added to queue)
+
+---------------------
+Begin Evaluation   69
+---------------------
+Parameters for evaluation 69:
+                      1.5214197531e-01 R
+                      8.3350000000e-01 S
+                      3.3277777778e-02 F
+
+(Asynchronous job 69 added to queue)
+
+---------------------
+Begin Evaluation   70
+---------------------
+Parameters for evaluation 70:
+                      1.5316666667e-01 R
+                      8.3761111111e-01 S
+                      3.3277777778e-02 F
+
+(Asynchronous job 70 added to queue)
+
+---------------------
+Begin Evaluation   71
+---------------------
+Parameters for evaluation 71:
+                      1.5316666667e-01 R
+                      8.2938888889e-01 S
+                      3.3277777778e-02 F
+
+(Asynchronous job 71 added to queue)
+
+---------------------
+Begin Evaluation   72
+---------------------
+Parameters for evaluation 72:
+                      1.5316666667e-01 R
+                      8.3350000000e-01 S
+                      3.4302469136e-02 F
+
+(Asynchronous job 72 added to queue)
+
+---------------------
+Begin Evaluation   73
+---------------------
+Parameters for evaluation 73:
+                      1.5316666667e-01 R
+                      8.3350000000e-01 S
+                      3.2253086420e-02 F
+
+(Asynchronous job 73 added to queue)
+
+Blocking synchronize of 6 asynchronous evaluations
+First pass: initiating 4 local asynchronous jobs
+Initiating evaluation 68
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Initiating evaluation 69
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Initiating evaluation 70
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Initiating evaluation 71
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Second pass: scheduling 2 remaining local asynchronous jobs
+Waiting on completed jobs
+Evaluation 68 has completed
+Initiating evaluation 72
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Waiting on completed jobs
+Evaluation 70 has completed
+Initiating evaluation 73
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Waiting on completed jobs
+Evaluation 69 has completed
+Waiting on completed jobs
+Evaluation 71 has completed
+Waiting on completed jobs
+Evaluation 72 has completed
+Waiting on completed jobs
+Evaluation 73 has completed
+
+Active response data for evaluation 68:
+Active set vector = { 1 1 }
+                      2.6267817110e-02 rmse
+                      4.1942012639e-02 rmse_std
+
+
+Active response data for evaluation 69:
+Active set vector = { 1 1 }
+                      2.5609436951e-02 rmse
+                      4.0327007646e-02 rmse_std
+
+
+Active response data for evaluation 70:
+Active set vector = { 1 1 }
+                      2.6133004952e-02 rmse
+                      3.8304676654e-02 rmse_std
+
+
+Active response data for evaluation 71:
+Active set vector = { 1 1 }
+                      2.6044909975e-02 rmse
+                      4.0879446959e-02 rmse_std
+
+
+Active response data for evaluation 72:
+Active set vector = { 1 1 }
+                      2.6423641273e-02 rmse
+                      4.0965473190e-02 rmse_std
+
+
+Active response data for evaluation 73:
+Active set vector = { 1 1 }
+                      2.5727992652e-02 rmse
+                      3.6926272940e-02 rmse_std
+
+Responses:
+2.6267817110e-02
+4.1942012639e-02
+Weights:
+Responses:
+2.5609436951e-02
+4.0327007646e-02
+Weights:
+Responses:
+2.6133004952e-02
+3.8304676654e-02
+Weights:
+Responses:
+2.6044909975e-02
+4.0879446959e-02
+Weights:
+Responses:
+2.6423641273e-02
+4.0965473190e-02
+Weights:
+Responses:
+2.5727992652e-02
+3.6926272940e-02
+Weights:
+
+---------------------
+Begin Evaluation   74
+---------------------
+Parameters for evaluation 74:
+                      7.0166666667e-02 R
+                      8.3350000000e-01 S
+                      4.2500000000e-02 F
+
+(Asynchronous job 74 added to queue)
+
+---------------------
+Begin Evaluation   75
+---------------------
+Parameters for evaluation 75:
+                      1.4833333333e-02 R
+                      8.3350000000e-01 S
+                      4.2500000000e-02 F
+
+(Asynchronous job 75 added to queue)
+
+---------------------
+Begin Evaluation   76
+---------------------
+Parameters for evaluation 76:
+                      4.2500000000e-02 R
+                      9.4450000000e-01 S
+                      4.2500000000e-02 F
+
+(Asynchronous job 76 added to queue)
+
+---------------------
+Begin Evaluation   77
+---------------------
+Parameters for evaluation 77:
+                      4.2500000000e-02 R
+                      7.2250000000e-01 S
+                      4.2500000000e-02 F
+
+(Asynchronous job 77 added to queue)
+
+---------------------
+Begin Evaluation   78
+---------------------
+Parameters for evaluation 78:
+                      4.2500000000e-02 R
+                      8.3350000000e-01 S
+                      7.0166666667e-02 F
+
+(Asynchronous job 78 added to queue)
+
+---------------------
+Begin Evaluation   79
+---------------------
+Parameters for evaluation 79:
+                      4.2500000000e-02 R
+                      8.3350000000e-01 S
+                      1.4833333333e-02 F
+
+(Asynchronous job 79 added to queue)
+
+Blocking synchronize of 6 asynchronous evaluations
+First pass: initiating 4 local asynchronous jobs
+Initiating evaluation 74
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Initiating evaluation 75
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Initiating evaluation 76
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Initiating evaluation 77
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Second pass: scheduling 2 remaining local asynchronous jobs
+Waiting on completed jobs
+Evaluation 75 has completed
+Initiating evaluation 78
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Waiting on completed jobs
+Evaluation 77 has completed
+Initiating evaluation 79
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Waiting on completed jobs
+Evaluation 76 has completed
+Waiting on completed jobs
+Evaluation 74 has completed
+Waiting on completed jobs
+Evaluation 78 has completed
+Waiting on completed jobs
+Evaluation 79 has completed
+
+Active response data for evaluation 74:
+Active set vector = { 1 1 }
+                      2.2884248985e-02 rmse
+                      4.6325284117e-02 rmse_std
+
+
+Active response data for evaluation 75:
+Active set vector = { 1 1 }
+                      3.5436898967e-02 rmse
+                      4.8054766221e-02 rmse_std
+
+
+Active response data for evaluation 76:
+Active set vector = { 1 1 }
+                      3.1556640618e-02 rmse
+                      5.5027414366e-02 rmse_std
+
+
+Active response data for evaluation 77:
+Active set vector = { 1 1 }
+                      2.5483106054e-02 rmse
+                      4.4880850681e-02 rmse_std
+
+
+Active response data for evaluation 78:
+Active set vector = { 1 1 }
+                      2.6614591967e-02 rmse
+                      4.6324359511e-02 rmse_std
+
+
+Active response data for evaluation 79:
+Active set vector = { 1 1 }
+                      3.3577136802e-02 rmse
+                      5.2061993272e-02 rmse_std
+
+Responses:
+2.2884248985e-02
+4.6325284117e-02
+Weights:
+Responses:
+3.5436898967e-02
+4.8054766221e-02
+Weights:
+Responses:
+3.1556640618e-02
+5.5027414366e-02
+Weights:
+Responses:
+2.5483106054e-02
+4.4880850681e-02
+Weights:
+Responses:
+2.6614591967e-02
+4.6324359511e-02
+Weights:
+Responses:
+3.3577136802e-02
+5.2061993272e-02
+Weights:
+
+---------------------
+Begin Evaluation   80
+---------------------
+Parameters for evaluation 80:
+                      1.6238888889e-01 R
+                      7.2250000000e-01 S
+                      1.4833333333e-02 F
+
+(Asynchronous job 80 added to queue)
+
+---------------------
+Begin Evaluation   81
+---------------------
+Parameters for evaluation 81:
+                      1.4394444444e-01 R
+                      7.2250000000e-01 S
+                      1.4833333333e-02 F
+
+(Asynchronous job 81 added to queue)
+
+---------------------
+Begin Evaluation   82
+---------------------
+Parameters for evaluation 82:
+                      1.5316666667e-01 R
+                      7.5950000000e-01 S
+                      1.4833333333e-02 F
+
+(Asynchronous job 82 added to queue)
+
+---------------------
+Begin Evaluation   83
+---------------------
+Parameters for evaluation 83:
+                      1.5316666667e-01 R
+                      6.8550000000e-01 S
+                      1.4833333333e-02 F
+
+(Asynchronous job 83 added to queue)
+
+---------------------
+Begin Evaluation   84
+---------------------
+Parameters for evaluation 84:
+                      1.5316666667e-01 R
+                      7.2250000000e-01 S
+                      2.4055555556e-02 F
+
+(Asynchronous job 84 added to queue)
+
+---------------------
+Begin Evaluation   85
+---------------------
+Parameters for evaluation 85:
+                      1.5316666667e-01 R
+                      7.2250000000e-01 S
+                      5.6111111111e-03 F
+
+(Asynchronous job 85 added to queue)
+
+Blocking synchronize of 6 asynchronous evaluations
+First pass: initiating 4 local asynchronous jobs
+Initiating evaluation 80
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Initiating evaluation 81
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Initiating evaluation 82
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Initiating evaluation 83
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Second pass: scheduling 2 remaining local asynchronous jobs
+Waiting on completed jobs
+Evaluation 83 has completed
+Initiating evaluation 84
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Waiting on completed jobs
+Evaluation 81 has completed
+Initiating evaluation 85
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Waiting on completed jobs
+Evaluation 80 has completed
+Waiting on completed jobs
+Evaluation 82 has completed
+Waiting on completed jobs
+Evaluation 84 has completed
+Waiting on completed jobs
+Evaluation 85 has completed
+
+Active response data for evaluation 80:
+Active set vector = { 1 1 }
+                      2.2201045145e-02 rmse
+                      4.0972797796e-02 rmse_std
+
+
+Active response data for evaluation 81:
+Active set vector = { 1 1 }
+                      2.1663454543e-02 rmse
+                      4.2421813013e-02 rmse_std
+
+
+Active response data for evaluation 82:
+Active set vector = { 1 1 }
+                      2.2018893285e-02 rmse
+                      4.4535232471e-02 rmse_std
+
+
+Active response data for evaluation 83:
+Active set vector = { 1 1 }
+                      2.1053716685e-02 rmse
+                      3.9460333817e-02 rmse_std
+
+
+Active response data for evaluation 84:
+Active set vector = { 1 1 }
+                      2.2814694294e-02 rmse
+                      3.8697339099e-02 rmse_std
+
+
+Active response data for evaluation 85:
+Active set vector = { 1 1 }
+                      2.7638025285e-02 rmse
+                      5.0315168806e-02 rmse_std
+
+Responses:
+2.2201045145e-02
+4.0972797796e-02
+Weights:
+Responses:
+2.1663454543e-02
+4.2421813013e-02
+Weights:
+Responses:
+2.2018893285e-02
+4.4535232471e-02
+Weights:
+Responses:
+2.1053716685e-02
+3.9460333817e-02
+Weights:
+Responses:
+2.2814694294e-02
+3.8697339099e-02
+Weights:
+Responses:
+2.7638025285e-02
+5.0315168806e-02
+Weights:
+
+---------------------
+Begin Evaluation   86
+---------------------
+Parameters for evaluation 86:
+                      1.5419135802e-01 R
+                      8.3350000000e-01 S
+                      3.2253086420e-02 F
+
+(Asynchronous job 86 added to queue)
+
+---------------------
+Begin Evaluation   87
+---------------------
+Parameters for evaluation 87:
+                      1.5214197531e-01 R
+                      8.3350000000e-01 S
+                      3.2253086420e-02 F
+
+(Asynchronous job 87 added to queue)
+
+---------------------
+Begin Evaluation   88
+---------------------
+Parameters for evaluation 88:
+                      1.5316666667e-01 R
+                      8.3761111111e-01 S
+                      3.2253086420e-02 F
+
+(Asynchronous job 88 added to queue)
+
+---------------------
+Begin Evaluation   89
+---------------------
+Parameters for evaluation 89:
+                      1.5316666667e-01 R
+                      8.2938888889e-01 S
+                      3.2253086420e-02 F
+
+(Asynchronous job 89 added to queue)
+
+Blocking synchronize of 4 asynchronous evaluations
+First pass: initiating 4 local asynchronous jobs
+Initiating evaluation 86
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Initiating evaluation 87
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Initiating evaluation 88
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Initiating evaluation 89
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Waiting on completed jobs
+Evaluation 87 has completed
+Waiting on completed jobs
+Evaluation 89 has completed
+Waiting on completed jobs
+Evaluation 86 has completed
+Waiting on completed jobs
+Evaluation 88 has completed
+
+Active response data for evaluation 86:
+Active set vector = { 1 1 }
+                      2.5761239090e-02 rmse
+                      3.8645050979e-02 rmse_std
+
+
+Active response data for evaluation 87:
+Active set vector = { 1 1 }
+                      2.5508371683e-02 rmse
+                      3.9303621661e-02 rmse_std
+
+
+Active response data for evaluation 88:
+Active set vector = { 1 1 }
+                      2.5595886841e-02 rmse
+                      3.8345314409e-02 rmse_std
+
+
+Active response data for evaluation 89:
+Active set vector = { 1 1 }
+                      2.5581473909e-02 rmse
+                      3.9343942484e-02 rmse_std
+
+Responses:
+2.5761239090e-02
+3.8645050979e-02
+Weights:
+Responses:
+2.5508371683e-02
+3.9303621661e-02
+Weights:
+Responses:
+2.5595886841e-02
+3.8345314409e-02
+Weights:
+Responses:
+2.5581473909e-02
+3.9343942484e-02
+Weights:
+
+---------------------
+Begin Evaluation   90
+---------------------
+Parameters for evaluation 90:
+                      7.0166666667e-02 R
+                      7.2250000000e-01 S
+                      4.2500000000e-02 F
+
+(Asynchronous job 90 added to queue)
+
+---------------------
+Begin Evaluation   91
+---------------------
+Parameters for evaluation 91:
+                      1.4833333333e-02 R
+                      7.2250000000e-01 S
+                      4.2500000000e-02 F
+
+(Asynchronous job 91 added to queue)
+
+---------------------
+Begin Evaluation   92
+---------------------
+Parameters for evaluation 92:
+                      4.2500000000e-02 R
+                      7.2250000000e-01 S
+                      7.0166666667e-02 F
+
+(Asynchronous job 92 added to queue)
+
+---------------------
+Begin Evaluation   93
+---------------------
+Parameters for evaluation 93:
+                      4.2500000000e-02 R
+                      7.2250000000e-01 S
+                      1.4833333333e-02 F
+
+(Asynchronous job 93 added to queue)
+
+Blocking synchronize of 4 asynchronous evaluations
+First pass: initiating 4 local asynchronous jobs
+Initiating evaluation 90
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Initiating evaluation 91
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Initiating evaluation 92
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Initiating evaluation 93
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Waiting on completed jobs
+Evaluation 91 has completed
+Waiting on completed jobs
+Evaluation 93 has completed
+Waiting on completed jobs
+Evaluation 92 has completed
+Waiting on completed jobs
+Evaluation 90 has completed
+
+Active response data for evaluation 90:
+Active set vector = { 1 1 }
+                      1.9769930637e-02 rmse
+                      4.5956795326e-02 rmse_std
+
+
+Active response data for evaluation 91:
+Active set vector = { 1 1 }
+                      3.2853670812e-02 rmse
+                      4.8821959140e-02 rmse_std
+
+
+Active response data for evaluation 92:
+Active set vector = { 1 1 }
+                      2.2726175773e-02 rmse
+                      5.3249907025e-02 rmse_std
+
+
+Active response data for evaluation 93:
+Active set vector = { 1 1 }
+                      3.1846394511e-02 rmse
+                      5.0155041896e-02 rmse_std
+
+Responses:
+1.9769930637e-02
+4.5956795326e-02
+Weights:
+Responses:
+3.2853670812e-02
+4.8821959140e-02
+Weights:
+Responses:
+2.2726175773e-02
+5.3249907025e-02
+Weights:
+Responses:
+3.1846394511e-02
+5.0155041896e-02
+Weights:
+
+---------------------
+Begin Evaluation   94
+---------------------
+Parameters for evaluation 94:
+                      1.6238888889e-01 R
+                      6.8550000000e-01 S
+                      1.4833333333e-02 F
+
+(Asynchronous job 94 added to queue)
+
+---------------------
+Begin Evaluation   95
+---------------------
+Parameters for evaluation 95:
+                      1.4394444444e-01 R
+                      6.8550000000e-01 S
+                      1.4833333333e-02 F
+
+(Asynchronous job 95 added to queue)
+
+---------------------
+Begin Evaluation   96
+---------------------
+Parameters for evaluation 96:
+                      1.5316666667e-01 R
+                      6.8550000000e-01 S
+                      2.4055555556e-02 F
+
+(Asynchronous job 96 added to queue)
+
+---------------------
+Begin Evaluation   97
+---------------------
+Parameters for evaluation 97:
+                      1.5316666667e-01 R
+                      6.8550000000e-01 S
+                      5.6111111111e-03 F
+
+(Asynchronous job 97 added to queue)
+
+Blocking synchronize of 4 asynchronous evaluations
+First pass: initiating 4 local asynchronous jobs
+Initiating evaluation 94
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Initiating evaluation 95
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Initiating evaluation 96
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Initiating evaluation 97
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Waiting on completed jobs
+Evaluation 95 has completed
+Waiting on completed jobs
+Evaluation 97 has completed
+Waiting on completed jobs
+Evaluation 96 has completed
+Waiting on completed jobs
+Evaluation 94 has completed
+
+Active response data for evaluation 94:
+Active set vector = { 1 1 }
+                      2.1701643694e-02 rmse
+                      3.8942590922e-02 rmse_std
+
+
+Active response data for evaluation 95:
+Active set vector = { 1 1 }
+                      2.0922877554e-02 rmse
+                      3.9701430054e-02 rmse_std
+
+
+Active response data for evaluation 96:
+Active set vector = { 1 1 }
+                      2.2566190489e-02 rmse
+                      3.8072409184e-02 rmse_std
+
+
+Active response data for evaluation 97:
+Active set vector = { 1 1 }
+                      2.7376026416e-02 rmse
+                      4.9280319959e-02 rmse_std
+
+Responses:
+2.1701643694e-02
+3.8942590922e-02
+Weights:
+Responses:
+2.0922877554e-02
+3.9701430054e-02
+Weights:
+Responses:
+2.2566190489e-02
+3.8072409184e-02
+Weights:
+Responses:
+2.7376026416e-02
+4.9280319959e-02
+Weights:
+
+---------------------
+Begin Evaluation   98
+---------------------
+Parameters for evaluation 98:
+                      7.0166666667e-02 R
+                      7.2250000000e-01 S
+                      7.0166666667e-02 F
+
+(Asynchronous job 98 added to queue)
+
+---------------------
+Begin Evaluation   99
+---------------------
+Parameters for evaluation 99:
+                      7.0166666667e-02 R
+                      7.2250000000e-01 S
+                      1.4833333333e-02 F
+
+(Asynchronous job 99 added to queue)
+
+Blocking synchronize of 2 asynchronous evaluations
+First pass: initiating 2 local asynchronous jobs
+Initiating evaluation 98
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Initiating evaluation 99
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Waiting on completed jobs
+Evaluation 98 has completed
+Waiting on completed jobs
+Evaluation 99 has completed
+
+Active response data for evaluation 98:
+Active set vector = { 1 1 }
+                      1.7789397062e-02 rmse
+                      5.6365125247e-02 rmse_std
+
+
+Active response data for evaluation 99:
+Active set vector = { 1 1 }
+                      2.7819271583e-02 rmse
+                      4.6654607872e-02 rmse_std
+
+Responses:
+1.7789397062e-02
+5.6365125247e-02
+Weights:
+Responses:
+2.7819271583e-02
+4.6654607872e-02
+Weights:
+
+---------------------
+Begin Evaluation  100
+---------------------
+Parameters for evaluation 100:
+                      1.6238888889e-01 R
+                      6.8550000000e-01 S
+                      2.4055555556e-02 F
+
+(Asynchronous job 100 added to queue)
+
+---------------------
+Begin Evaluation  101
+---------------------
+Parameters for evaluation 101:
+                      1.4394444444e-01 R
+                      6.8550000000e-01 S
+                      2.4055555556e-02 F
+
+(Asynchronous job 101 added to queue)
+
+Blocking synchronize of 2 asynchronous evaluations
+First pass: initiating 2 local asynchronous jobs
+Initiating evaluation 100
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Initiating evaluation 101
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Waiting on completed jobs
+Evaluation 101 has completed
+Waiting on completed jobs
+Evaluation 100 has completed
+
+Active response data for evaluation 100:
+Active set vector = { 1 1 }
+                      2.3633538490e-02 rmse
+                      4.0328779453e-02 rmse_std
+
+
+Active response data for evaluation 101:
+Active set vector = { 1 1 }
+                      2.0529914933e-02 rmse
+                      4.3125057386e-02 rmse_std
+
+Responses:
+2.3633538490e-02
+4.0328779453e-02
+Weights:
+Responses:
+2.0529914933e-02
+4.3125057386e-02
+Weights:
+
+---------------------
+Begin Evaluation  102
+---------------------
+Parameters for evaluation 102:
+                      7.0166666667e-02 R
+                      8.3350000000e-01 S
+                      7.0166666667e-02 F
+
+(Asynchronous job 102 added to queue)
+
+---------------------
+Begin Evaluation  103
+---------------------
+Parameters for evaluation 103:
+                      7.0166666667e-02 R
+                      8.3350000000e-01 S
+                      1.4833333333e-02 F
+
+(Asynchronous job 103 added to queue)
+
+Blocking synchronize of 2 asynchronous evaluations
+First pass: initiating 2 local asynchronous jobs
+Initiating evaluation 102
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Initiating evaluation 103
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Waiting on completed jobs
+Evaluation 103 has completed
+Waiting on completed jobs
+Evaluation 102 has completed
+
+Active response data for evaluation 102:
+Active set vector = { 1 1 }
+                      1.9646409260e-02 rmse
+                      4.7689794492e-02 rmse_std
+
+
+Active response data for evaluation 103:
+Active set vector = { 1 1 }
+                      2.9350003250e-02 rmse
+                      5.1992486210e-02 rmse_std
+
+Responses:
+1.9646409260e-02
+4.7689794492e-02
+Weights:
+Responses:
+2.9350003250e-02
+5.1992486210e-02
+Weights:
+
+---------------------
+Begin Evaluation  104
+---------------------
+Parameters for evaluation 104:
+                      1.6238888889e-01 R
+                      7.2250000000e-01 S
+                      2.4055555556e-02 F
+
+(Asynchronous job 104 added to queue)
+
+---------------------
+Begin Evaluation  105
+---------------------
+Parameters for evaluation 105:
+                      1.4394444444e-01 R
+                      7.2250000000e-01 S
+                      2.4055555556e-02 F
+
+(Asynchronous job 105 added to queue)
+
+Blocking synchronize of 2 asynchronous evaluations
+First pass: initiating 2 local asynchronous jobs
+Initiating evaluation 104
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Initiating evaluation 105
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Waiting on completed jobs
+Evaluation 105 has completed
+Waiting on completed jobs
+Evaluation 104 has completed
+
+Active response data for evaluation 104:
+Active set vector = { 1 1 }
+                      2.4112297534e-02 rmse
+                      4.0837896393e-02 rmse_std
+
+
+Active response data for evaluation 105:
+Active set vector = { 1 1 }
+                      2.1032171574e-02 rmse
+                      4.1473206817e-02 rmse_std
+
+Responses:
+2.4112297534e-02
+4.0837896393e-02
+Weights:
+Responses:
+2.1032171574e-02
+4.1473206817e-02
+Weights:
+
+---------------------
+Begin Evaluation  106
+---------------------
+Parameters for evaluation 106:
+                      1.5624074074e-01 R
+                      6.8550000000e-01 S
+                      2.4055555556e-02 F
+
+(Asynchronous job 106 added to queue)
+
+---------------------
+Begin Evaluation  107
+---------------------
+Parameters for evaluation 107:
+                      1.5009259259e-01 R
+                      6.8550000000e-01 S
+                      2.4055555556e-02 F
+
+(Asynchronous job 107 added to queue)
+
+---------------------
+Begin Evaluation  108
+---------------------
+Parameters for evaluation 108:
+                      1.5316666667e-01 R
+                      6.9783333333e-01 S
+                      2.4055555556e-02 F
+
+(Asynchronous job 108 added to queue)
+
+---------------------
+Begin Evaluation  109
+---------------------
+Parameters for evaluation 109:
+                      1.5316666667e-01 R
+                      6.7316666667e-01 S
+                      2.4055555556e-02 F
+
+(Asynchronous job 109 added to queue)
+
+---------------------
+Begin Evaluation  110
+---------------------
+Parameters for evaluation 110:
+                      1.5316666667e-01 R
+                      6.8550000000e-01 S
+                      2.7129629630e-02 F
+
+(Asynchronous job 110 added to queue)
+
+---------------------
+Begin Evaluation  111
+---------------------
+Parameters for evaluation 111:
+                      1.5316666667e-01 R
+                      6.8550000000e-01 S
+                      2.0981481481e-02 F
+
+(Asynchronous job 111 added to queue)
+
+Blocking synchronize of 6 asynchronous evaluations
+First pass: initiating 4 local asynchronous jobs
+Initiating evaluation 106
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Initiating evaluation 107
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Initiating evaluation 108
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Initiating evaluation 109
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Second pass: scheduling 2 remaining local asynchronous jobs
+Waiting on completed jobs
+Evaluation 106 has completed
+Initiating evaluation 110
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Waiting on completed jobs
+Evaluation 108 has completed
+Initiating evaluation 111
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Waiting on completed jobs
+Evaluation 107 has completed
+Waiting on completed jobs
+Evaluation 109 has completed
+Waiting on completed jobs
+Evaluation 111 has completed
+Waiting on completed jobs
+Evaluation 110 has completed
+
+Active response data for evaluation 106:
+Active set vector = { 1 1 }
+                      2.2990254586e-02 rmse
+                      4.2800399702e-02 rmse_std
+
+
+Active response data for evaluation 107:
+Active set vector = { 1 1 }
+                      2.2268843213e-02 rmse
+                      3.8674365301e-02 rmse_std
+
+
+Active response data for evaluation 108:
+Active set vector = { 1 1 }
+                      2.2211852064e-02 rmse
+                      4.0313000909e-02 rmse_std
+
+
+Active response data for evaluation 109:
+Active set vector = { 1 1 }
+                      2.2466631120e-02 rmse
+                      4.1214610228e-02 rmse_std
+
+
+Active response data for evaluation 110:
+Active set vector = { 1 1 }
+                      2.3047080859e-02 rmse
+                      4.0628371173e-02 rmse_std
+
+
+Active response data for evaluation 111:
+Active set vector = { 1 1 }
+                      2.1730935896e-02 rmse
+                      4.0612582754e-02 rmse_std
+
+Responses:
+2.2990254586e-02
+4.2800399702e-02
+Weights:
+Responses:
+2.2268843213e-02
+3.8674365301e-02
+Weights:
+Responses:
+2.2211852064e-02
+4.0313000909e-02
+Weights:
+Responses:
+2.2466631120e-02
+4.1214610228e-02
+Weights:
+Responses:
+2.3047080859e-02
+4.0628371173e-02
+Weights:
+Responses:
+2.1730935896e-02
+4.0612582754e-02
+Weights:
+
+---------------------
+Begin Evaluation  112
+---------------------
+Parameters for evaluation 112:
+                      1.2550000000e-01 R
+                      9.4450000000e-01 S
+                      1.4833333333e-02 F
+
+(Asynchronous job 112 added to queue)
+
+---------------------
+Begin Evaluation  113
+---------------------
+Parameters for evaluation 113:
+                      1.2550000000e-01 R
+                      7.2250000000e-01 S
+                      1.4833333333e-02 F
+
+(Asynchronous job 113 added to queue)
+
+Blocking synchronize of 2 asynchronous evaluations
+First pass: initiating 2 local asynchronous jobs
+Initiating evaluation 112
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Initiating evaluation 113
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Waiting on completed jobs
+Evaluation 112 has completed
+Waiting on completed jobs
+Evaluation 113 has completed
+
+Active response data for evaluation 112:
+Active set vector = { 1 1 }
+                      2.5221124333e-02 rmse
+                      5.3702838707e-02 rmse_std
+
+
+Active response data for evaluation 113:
+Active set vector = { 1 1 }
+                      2.2209753892e-02 rmse
+                      4.3194718068e-02 rmse_std
+
+Responses:
+2.5221124333e-02
+5.3702838707e-02
+Weights:
+Responses:
+2.2209753892e-02
+4.3194718068e-02
+Weights:
+
+---------------------
+Begin Evaluation  114
+---------------------
+Parameters for evaluation 114:
+                      1.6546296296e-01 R
+                      6.8550000000e-01 S
+                      1.4833333333e-02 F
+
+(Asynchronous job 114 added to queue)
+
+---------------------
+Begin Evaluation  115
+---------------------
+Parameters for evaluation 115:
+                      1.5931481481e-01 R
+                      6.8550000000e-01 S
+                      1.4833333333e-02 F
+
+(Asynchronous job 115 added to queue)
+
+---------------------
+Begin Evaluation  116
+---------------------
+Parameters for evaluation 116:
+                      1.6238888889e-01 R
+                      6.9783333333e-01 S
+                      1.4833333333e-02 F
+
+(Asynchronous job 116 added to queue)
+
+---------------------
+Begin Evaluation  117
+---------------------
+Parameters for evaluation 117:
+                      1.6238888889e-01 R
+                      6.7316666667e-01 S
+                      1.4833333333e-02 F
+
+(Asynchronous job 117 added to queue)
+
+---------------------
+Begin Evaluation  118
+---------------------
+Parameters for evaluation 118:
+                      1.6238888889e-01 R
+                      6.8550000000e-01 S
+                      1.7907407407e-02 F
+
+(Asynchronous job 118 added to queue)
+
+---------------------
+Begin Evaluation  119
+---------------------
+Parameters for evaluation 119:
+                      1.6238888889e-01 R
+                      6.8550000000e-01 S
+                      1.1759259259e-02 F
+
+(Asynchronous job 119 added to queue)
+
+Blocking synchronize of 6 asynchronous evaluations
+First pass: initiating 4 local asynchronous jobs
+Initiating evaluation 114
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Initiating evaluation 115
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Initiating evaluation 116
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Initiating evaluation 117
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Second pass: scheduling 2 remaining local asynchronous jobs
+Waiting on completed jobs
+Evaluation 117 has completed
+Initiating evaluation 118
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Waiting on completed jobs
+Evaluation 115 has completed
+Initiating evaluation 119
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Waiting on completed jobs
+Evaluation 116 has completed
+Waiting on completed jobs
+Evaluation 114 has completed
+Waiting on completed jobs
+Evaluation 118 has completed
+Waiting on completed jobs
+Evaluation 119 has completed
+
+Active response data for evaluation 114:
+Active set vector = { 1 1 }
+                      2.2088147289e-02 rmse
+                      4.1208025784e-02 rmse_std
+
+
+Active response data for evaluation 115:
+Active set vector = { 1 1 }
+                      2.1777493170e-02 rmse
+                      3.9467508523e-02 rmse_std
+
+
+Active response data for evaluation 116:
+Active set vector = { 1 1 }
+                      2.1761548692e-02 rmse
+                      3.9377253438e-02 rmse_std
+
+
+Active response data for evaluation 117:
+Active set vector = { 1 1 }
+                      2.1422672651e-02 rmse
+                      4.1881181156e-02 rmse_std
+
+
+Active response data for evaluation 118:
+Active set vector = { 1 1 }
+                      2.2348190450e-02 rmse
+                      3.9030667659e-02 rmse_std
+
+
+Active response data for evaluation 119:
+Active set vector = { 1 1 }
+                      2.2532410362e-02 rmse
+                      4.1691792936e-02 rmse_std
+
+Responses:
+2.2088147289e-02
+4.1208025784e-02
+Weights:
+Responses:
+2.1777493170e-02
+3.9467508523e-02
+Weights:
+Responses:
+2.1761548692e-02
+3.9377253438e-02
+Weights:
+Responses:
+2.1422672651e-02
+4.1881181156e-02
+Weights:
+Responses:
+2.2348190450e-02
+3.9030667659e-02
+Weights:
+Responses:
+2.2532410362e-02
+4.1691792936e-02
+Weights:
+
+---------------------
+Begin Evaluation  120
+---------------------
+Parameters for evaluation 120:
+                      1.5419135802e-01 R
+                      6.8550000000e-01 S
+                      2.4055555556e-02 F
+
+(Asynchronous job 120 added to queue)
+
+---------------------
+Begin Evaluation  121
+---------------------
+Parameters for evaluation 121:
+                      1.5214197531e-01 R
+                      6.8550000000e-01 S
+                      2.4055555556e-02 F
+
+(Asynchronous job 121 added to queue)
+
+---------------------
+Begin Evaluation  122
+---------------------
+Parameters for evaluation 122:
+                      1.5316666667e-01 R
+                      6.8961111111e-01 S
+                      2.4055555556e-02 F
+
+(Asynchronous job 122 added to queue)
+
+---------------------
+Begin Evaluation  123
+---------------------
+Parameters for evaluation 123:
+                      1.5316666667e-01 R
+                      6.8138888889e-01 S
+                      2.4055555556e-02 F
+
+(Asynchronous job 123 added to queue)
+
+---------------------
+Begin Evaluation  124
+---------------------
+Parameters for evaluation 124:
+                      1.5316666667e-01 R
+                      6.8550000000e-01 S
+                      2.5080246914e-02 F
+
+(Asynchronous job 124 added to queue)
+
+---------------------
+Begin Evaluation  125
+---------------------
+Parameters for evaluation 125:
+                      1.5316666667e-01 R
+                      6.8550000000e-01 S
+                      2.3030864198e-02 F
+
+(Asynchronous job 125 added to queue)
+
+Blocking synchronize of 6 asynchronous evaluations
+First pass: initiating 4 local asynchronous jobs
+Initiating evaluation 120
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Initiating evaluation 121
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Initiating evaluation 122
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Initiating evaluation 123
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Second pass: scheduling 2 remaining local asynchronous jobs
+Waiting on completed jobs
+Evaluation 123 has completed
+Initiating evaluation 124
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Waiting on completed jobs
+Evaluation 122 has completed
+Initiating evaluation 125
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Waiting on completed jobs
+Evaluation 121 has completed
+Waiting on completed jobs
+Evaluation 120 has completed
+Waiting on completed jobs
+Evaluation 124 has completed
+Waiting on completed jobs
+Evaluation 125 has completed
+
+Active response data for evaluation 120:
+Active set vector = { 1 1 }
+                      2.2928382842e-02 rmse
+                      3.9174561056e-02 rmse_std
+
+
+Active response data for evaluation 121:
+Active set vector = { 1 1 }
+                      2.1954460281e-02 rmse
+                      3.9655316514e-02 rmse_std
+
+
+Active response data for evaluation 122:
+Active set vector = { 1 1 }
+                      2.2349240068e-02 rmse
+                      3.7517189825e-02 rmse_std
+
+
+Active response data for evaluation 123:
+Active set vector = { 1 1 }
+                      2.2495269779e-02 rmse
+                      4.2359754815e-02 rmse_std
+
+
+Active response data for evaluation 124:
+Active set vector = { 1 1 }
+                      2.2837115328e-02 rmse
+                      4.0708200973e-02 rmse_std
+
+
+Active response data for evaluation 125:
+Active set vector = { 1 1 }
+                      2.2108860850e-02 rmse
+                      3.8380801470e-02 rmse_std
+
+Responses:
+2.2928382842e-02
+3.9174561056e-02
+Weights:
+Responses:
+2.1954460281e-02
+3.9655316514e-02
+Weights:
+Responses:
+2.2349240068e-02
+3.7517189825e-02
+Weights:
+Responses:
+2.2495269779e-02
+4.2359754815e-02
+Weights:
+Responses:
+2.2837115328e-02
+4.0708200973e-02
+Weights:
+Responses:
+2.2108860850e-02
+3.8380801470e-02
+Weights:
+
+---------------------
+Begin Evaluation  126
+---------------------
+Parameters for evaluation 126:
+                      1.5316666667e-01 R
+                      9.4450000000e-01 S
+                      7.0166666667e-02 F
+
+(Asynchronous job 126 added to queue)
+
+---------------------
+Begin Evaluation  127
+---------------------
+Parameters for evaluation 127:
+                      1.5316666667e-01 R
+                      7.2250000000e-01 S
+                      7.0166666667e-02 F
+
+(Asynchronous job 127 added to queue)
+
+Blocking synchronize of 2 asynchronous evaluations
+First pass: initiating 2 local asynchronous jobs
+Initiating evaluation 126
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Initiating evaluation 127
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Waiting on completed jobs
+Evaluation 126 has completed
+Waiting on completed jobs
+Evaluation 127 has completed
+
+Active response data for evaluation 126:
+Active set vector = { 1 1 }
+                      3.6606371677e-02 rmse
+                      3.9220286734e-02 rmse_std
+
+
+Active response data for evaluation 127:
+Active set vector = { 1 1 }
+                      4.0170956800e-02 rmse
+                      5.7722303797e-02 rmse_std
+
+Responses:
+3.6606371677e-02
+3.9220286734e-02
+Weights:
+Responses:
+4.0170956800e-02
+5.7722303797e-02
+Weights:
+
+---------------------
+Begin Evaluation  128
+---------------------
+Parameters for evaluation 128:
+                      1.5419135802e-01 R
+                      6.8961111111e-01 S
+                      2.4055555556e-02 F
+
+(Asynchronous job 128 added to queue)
+
+---------------------
+Begin Evaluation  129
+---------------------
+Parameters for evaluation 129:
+                      1.5214197531e-01 R
+                      6.8961111111e-01 S
+                      2.4055555556e-02 F
+
+(Asynchronous job 129 added to queue)
+
+---------------------
+Begin Evaluation  130
+---------------------
+Parameters for evaluation 130:
+                      1.5316666667e-01 R
+                      6.8961111111e-01 S
+                      2.5080246914e-02 F
+
+(Asynchronous job 130 added to queue)
+
+---------------------
+Begin Evaluation  131
+---------------------
+Parameters for evaluation 131:
+                      1.5316666667e-01 R
+                      6.8961111111e-01 S
+                      2.3030864198e-02 F
+
+(Asynchronous job 131 added to queue)
+
+Blocking synchronize of 4 asynchronous evaluations
+First pass: initiating 4 local asynchronous jobs
+Initiating evaluation 128
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Initiating evaluation 129
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Initiating evaluation 130
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Initiating evaluation 131
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Waiting on completed jobs
+Evaluation 129 has completed
+Waiting on completed jobs
+Evaluation 131 has completed
+Waiting on completed jobs
+Evaluation 128 has completed
+Waiting on completed jobs
+Evaluation 130 has completed
+
+Active response data for evaluation 128:
+Active set vector = { 1 1 }
+                      2.2903075949e-02 rmse
+                      3.8905409360e-02 rmse_std
+
+
+Active response data for evaluation 129:
+Active set vector = { 1 1 }
+                      2.2097728363e-02 rmse
+                      3.7184096801e-02 rmse_std
+
+
+Active response data for evaluation 130:
+Active set vector = { 1 1 }
+                      2.2541212197e-02 rmse
+                      3.8867114653e-02 rmse_std
+
+
+Active response data for evaluation 131:
+Active set vector = { 1 1 }
+                      2.2372367426e-02 rmse
+                      3.9656485483e-02 rmse_std
+
+Responses:
+2.2903075949e-02
+3.8905409360e-02
+Weights:
+Responses:
+2.2097728363e-02
+3.7184096801e-02
+Weights:
+Responses:
+2.2541212197e-02
+3.8867114653e-02
+Weights:
+Responses:
+2.2372367426e-02
+3.9656485483e-02
+Weights:
+
+---------------------
+Begin Evaluation  132
+---------------------
+Parameters for evaluation 132:
+                      7.0166666667e-02 R
+                      8.3350000000e-01 S
+                      1.2550000000e-01 F
+
+(Asynchronous job 132 added to queue)
+
+---------------------
+Begin Evaluation  133
+---------------------
+Parameters for evaluation 133:
+                      1.4833333333e-02 R
+                      8.3350000000e-01 S
+                      1.2550000000e-01 F
+
+(Asynchronous job 133 added to queue)
+
+---------------------
+Begin Evaluation  134
+---------------------
+Parameters for evaluation 134:
+                      4.2500000000e-02 R
+                      9.4450000000e-01 S
+                      1.2550000000e-01 F
+
+(Asynchronous job 134 added to queue)
+
+---------------------
+Begin Evaluation  135
+---------------------
+Parameters for evaluation 135:
+                      4.2500000000e-02 R
+                      7.2250000000e-01 S
+                      1.2550000000e-01 F
+
+(Asynchronous job 135 added to queue)
+
+---------------------
+Begin Evaluation  136
+---------------------
+Parameters for evaluation 136:
+                      4.2500000000e-02 R
+                      8.3350000000e-01 S
+                      1.5316666667e-01 F
+
+(Asynchronous job 136 added to queue)
+
+---------------------
+Begin Evaluation  137
+---------------------
+Parameters for evaluation 137:
+                      4.2500000000e-02 R
+                      8.3350000000e-01 S
+                      9.7833333333e-02 F
+
+(Asynchronous job 137 added to queue)
+
+Blocking synchronize of 6 asynchronous evaluations
+First pass: initiating 4 local asynchronous jobs
+Initiating evaluation 132
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Initiating evaluation 133
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Initiating evaluation 134
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Initiating evaluation 135
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Second pass: scheduling 2 remaining local asynchronous jobs
+Waiting on completed jobs
+Evaluation 133 has completed
+Initiating evaluation 136
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Waiting on completed jobs
+Evaluation 134 has completed
+Initiating evaluation 137
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Waiting on completed jobs
+Evaluation 135 has completed
+Waiting on completed jobs
+Evaluation 132 has completed
+Waiting on completed jobs
+Evaluation 136 has completed
+Waiting on completed jobs
+Evaluation 137 has completed
+
+Active response data for evaluation 132:
+Active set vector = { 1 1 }
+                      1.8489814399e-02 rmse
+                      4.9055967093e-02 rmse_std
+
+
+Active response data for evaluation 133:
+Active set vector = { 1 1 }
+                      3.3662762073e-02 rmse
+                      5.7240662028e-02 rmse_std
+
+
+Active response data for evaluation 134:
+Active set vector = { 1 1 }
+                      2.8201897242e-02 rmse
+                      5.1739483851e-02 rmse_std
+
+
+Active response data for evaluation 135:
+Active set vector = { 1 1 }
+                      2.4678717991e-02 rmse
+                      7.1129123068e-02 rmse_std
+
+
+Active response data for evaluation 136:
+Active set vector = { 1 1 }
+                      2.3980433989e-02 rmse
+                      5.9692361248e-02 rmse_std
+
+
+Active response data for evaluation 137:
+Active set vector = { 1 1 }
+                      2.5301173299e-02 rmse
+                      5.4783660180e-02 rmse_std
+
+Responses:
+1.8489814399e-02
+4.9055967093e-02
+Weights:
+Responses:
+3.3662762073e-02
+5.7240662028e-02
+Weights:
+Responses:
+2.8201897242e-02
+5.1739483851e-02
+Weights:
+Responses:
+2.4678717991e-02
+7.1129123068e-02
+Weights:
+Responses:
+2.3980433989e-02
+5.9692361248e-02
+Weights:
+Responses:
+2.5301173299e-02
+5.4783660180e-02
+Weights:
+
+---------------------
+Begin Evaluation  138
+---------------------
+Parameters for evaluation 138:
+                      1.3472222222e-01 R
+                      8.3350000000e-01 S
+                      4.2500000000e-02 F
+
+(Asynchronous job 138 added to queue)
+
+---------------------
+Begin Evaluation  139
+---------------------
+Parameters for evaluation 139:
+                      1.1627777778e-01 R
+                      8.3350000000e-01 S
+                      4.2500000000e-02 F
+
+(Asynchronous job 139 added to queue)
+
+---------------------
+Begin Evaluation  140
+---------------------
+Parameters for evaluation 140:
+                      1.2550000000e-01 R
+                      8.7050000000e-01 S
+                      4.2500000000e-02 F
+
+(Asynchronous job 140 added to queue)
+
+---------------------
+Begin Evaluation  141
+---------------------
+Parameters for evaluation 141:
+                      1.2550000000e-01 R
+                      7.9650000000e-01 S
+                      4.2500000000e-02 F
+
+(Asynchronous job 141 added to queue)
+
+---------------------
+Begin Evaluation  142
+---------------------
+Parameters for evaluation 142:
+                      1.2550000000e-01 R
+                      8.3350000000e-01 S
+                      5.1722222222e-02 F
+
+(Asynchronous job 142 added to queue)
+
+---------------------
+Begin Evaluation  143
+---------------------
+Parameters for evaluation 143:
+                      1.2550000000e-01 R
+                      8.3350000000e-01 S
+                      3.3277777778e-02 F
+
+(Asynchronous job 143 added to queue)
+
+Blocking synchronize of 6 asynchronous evaluations
+First pass: initiating 4 local asynchronous jobs
+Initiating evaluation 138
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Initiating evaluation 139
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Initiating evaluation 140
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Initiating evaluation 141
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Second pass: scheduling 2 remaining local asynchronous jobs
+Waiting on completed jobs
+Evaluation 140 has completed
+Initiating evaluation 142
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Waiting on completed jobs
+Evaluation 139 has completed
+Initiating evaluation 143
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Waiting on completed jobs
+Evaluation 141 has completed
+Waiting on completed jobs
+Evaluation 138 has completed
+Waiting on completed jobs
+Evaluation 142 has completed
+Evaluation 143 has completed
+
+Active response data for evaluation 138:
+Active set vector = { 1 1 }
+                      2.4283498714e-02 rmse
+                      4.2318363777e-02 rmse_std
+
+
+Active response data for evaluation 139:
+Active set vector = { 1 1 }
+                      2.1129566516e-02 rmse
+                      4.2743741259e-02 rmse_std
+
+
+Active response data for evaluation 140:
+Active set vector = { 1 1 }
+                      2.2321197274e-02 rmse
+                      4.1467720731e-02 rmse_std
+
+
+Active response data for evaluation 141:
+Active set vector = { 1 1 }
+                      2.2227643947e-02 rmse
+                      4.0138558245e-02 rmse_std
+
+
+Active response data for evaluation 142:
+Active set vector = { 1 1 }
+                      2.3539635739e-02 rmse
+                      4.0827959148e-02 rmse_std
+
+
+Active response data for evaluation 143:
+Active set vector = { 1 1 }
+                      2.1102637591e-02 rmse
+                      3.9374122377e-02 rmse_std
+
+Responses:
+2.4283498714e-02
+4.2318363777e-02
+Weights:
+Responses:
+2.1129566516e-02
+4.2743741259e-02
+Weights:
+Responses:
+2.2321197274e-02
+4.1467720731e-02
+Weights:
+Responses:
+2.2227643947e-02
+4.0138558245e-02
+Weights:
+Responses:
+2.3539635739e-02
+4.0827959148e-02
+Weights:
+Responses:
+2.1102637591e-02
+3.9374122377e-02
+Weights:
+
+---------------------
+Begin Evaluation  144
+---------------------
+Parameters for evaluation 144:
+                      1.5214197531e-01 R
+                      6.8961111111e-01 S
+                      2.5080246914e-02 F
+
+(Asynchronous job 144 added to queue)
+
+---------------------
+Begin Evaluation  145
+---------------------
+Parameters for evaluation 145:
+                      1.5214197531e-01 R
+                      6.8961111111e-01 S
+                      2.3030864198e-02 F
+
+(Asynchronous job 145 added to queue)
+
+Blocking synchronize of 2 asynchronous evaluations
+First pass: initiating 2 local asynchronous jobs
+Initiating evaluation 144
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Initiating evaluation 145
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Waiting on completed jobs
+Evaluation 144 has completed
+Waiting on completed jobs
+Evaluation 145 has completed
+
+Active response data for evaluation 144:
+Active set vector = { 1 1 }
+                      2.1958182834e-02 rmse
+                      4.2005833074e-02 rmse_std
+
+
+Active response data for evaluation 145:
+Active set vector = { 1 1 }
+                      2.1923577003e-02 rmse
+                      3.9700446695e-02 rmse_std
+
+Responses:
+2.1958182834e-02
+4.2005833074e-02
+Weights:
+Responses:
+2.1923577003e-02
+3.9700446695e-02
+Weights:
+
+---------------------
+Begin Evaluation  146
+---------------------
+Parameters for evaluation 146:
+                      7.0166666667e-02 R
+                      9.4450000000e-01 S
+                      1.2550000000e-01 F
+
+(Asynchronous job 146 added to queue)
+
+---------------------
+Begin Evaluation  147
+---------------------
+Parameters for evaluation 147:
+                      7.0166666667e-02 R
+                      7.2250000000e-01 S
+                      1.2550000000e-01 F
+
+(Asynchronous job 147 added to queue)
+
+---------------------
+Begin Evaluation  148
+---------------------
+Parameters for evaluation 148:
+                      7.0166666667e-02 R
+                      8.3350000000e-01 S
+                      1.5316666667e-01 F
+
+(Asynchronous job 148 added to queue)
+
+---------------------
+Begin Evaluation  149
+---------------------
+Parameters for evaluation 149:
+                      7.0166666667e-02 R
+                      8.3350000000e-01 S
+                      9.7833333333e-02 F
+
+(Asynchronous job 149 added to queue)
+
+Blocking synchronize of 4 asynchronous evaluations
+First pass: initiating 4 local asynchronous jobs
+Initiating evaluation 146
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Initiating evaluation 147
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Initiating evaluation 148
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Initiating evaluation 149
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Waiting on completed jobs
+Evaluation 146 has completed
+Waiting on completed jobs
+Evaluation 149 has completed
+Waiting on completed jobs
+Evaluation 148 has completed
+Waiting on completed jobs
+Evaluation 147 has completed
+
+Active response data for evaluation 146:
+Active set vector = { 1 1 }
+                      2.2284809749e-02 rmse
+                      4.8415761396e-02 rmse_std
+
+
+Active response data for evaluation 147:
+Active set vector = { 1 1 }
+                      2.0465169728e-02 rmse
+                      6.6911677445e-02 rmse_std
+
+
+Active response data for evaluation 148:
+Active set vector = { 1 1 }
+                      1.9306029248e-02 rmse
+                      5.6343181256e-02 rmse_std
+
+
+Active response data for evaluation 149:
+Active set vector = { 1 1 }
+                      1.8434637227e-02 rmse
+                      5.0151832857e-02 rmse_std
+
+Responses:
+2.2284809749e-02
+4.8415761396e-02
+Weights:
+Responses:
+2.0465169728e-02
+6.6911677445e-02
+Weights:
+Responses:
+1.9306029248e-02
+5.6343181256e-02
+Weights:
+Responses:
+1.8434637227e-02
+5.0151832857e-02
+Weights:
+
+---------------------
+Begin Evaluation  150
+---------------------
+Parameters for evaluation 150:
+                      1.3472222222e-01 R
+                      8.3350000000e-01 S
+                      3.3277777778e-02 F
+
+(Asynchronous job 150 added to queue)
+
+---------------------
+Begin Evaluation  151
+---------------------
+Parameters for evaluation 151:
+                      1.1627777778e-01 R
+                      8.3350000000e-01 S
+                      3.3277777778e-02 F
+
+(Asynchronous job 151 added to queue)
+
+---------------------
+Begin Evaluation  152
+---------------------
+Parameters for evaluation 152:
+                      1.2550000000e-01 R
+                      8.7050000000e-01 S
+                      3.3277777778e-02 F
+
+(Asynchronous job 152 added to queue)
+
+---------------------
+Begin Evaluation  153
+---------------------
+Parameters for evaluation 153:
+                      1.2550000000e-01 R
+                      7.9650000000e-01 S
+                      3.3277777778e-02 F
+
+(Asynchronous job 153 added to queue)
+
+Blocking synchronize of 4 asynchronous evaluations
+First pass: initiating 4 local asynchronous jobs
+Initiating evaluation 150
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Initiating evaluation 151
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Initiating evaluation 152
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Initiating evaluation 153
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Waiting on completed jobs
+Evaluation 152 has completed
+Waiting on completed jobs
+Evaluation 153 has completed
+Waiting on completed jobs
+Evaluation 151 has completed
+Waiting on completed jobs
+Evaluation 150 has completed
+
+Active response data for evaluation 150:
+Active set vector = { 1 1 }
+                      2.2286377743e-02 rmse
+                      4.1204087041e-02 rmse_std
+
+
+Active response data for evaluation 151:
+Active set vector = { 1 1 }
+                      2.0347896994e-02 rmse
+                      4.1963357602e-02 rmse_std
+
+
+Active response data for evaluation 152:
+Active set vector = { 1 1 }
+                      2.1537419383e-02 rmse
+                      4.3284428111e-02 rmse_std
+
+
+Active response data for evaluation 153:
+Active set vector = { 1 1 }
+                      2.0735726298e-02 rmse
+                      3.9067605929e-02 rmse_std
+
+Responses:
+2.2286377743e-02
+4.1204087041e-02
+Weights:
+Responses:
+2.0347896994e-02
+4.1963357602e-02
+Weights:
+Responses:
+2.1537419383e-02
+4.3284428111e-02
+Weights:
+Responses:
+2.0735726298e-02
+3.9067605929e-02
+Weights:
+
+---------------------
+Begin Evaluation  154
+---------------------
+Parameters for evaluation 154:
+                      1.5248353909e-01 R
+                      6.8961111111e-01 S
+                      2.4055555556e-02 F
+
+(Asynchronous job 154 added to queue)
+
+---------------------
+Begin Evaluation  155
+---------------------
+Parameters for evaluation 155:
+                      1.5180041152e-01 R
+                      6.8961111111e-01 S
+                      2.4055555556e-02 F
+
+(Asynchronous job 155 added to queue)
+
+---------------------
+Begin Evaluation  156
+---------------------
+Parameters for evaluation 156:
+                      1.5214197531e-01 R
+                      6.9098148148e-01 S
+                      2.4055555556e-02 F
+
+(Asynchronous job 156 added to queue)
+
+---------------------
+Begin Evaluation  157
+---------------------
+Parameters for evaluation 157:
+                      1.5214197531e-01 R
+                      6.8824074074e-01 S
+                      2.4055555556e-02 F
+
+(Asynchronous job 157 added to queue)
+
+---------------------
+Begin Evaluation  158
+---------------------
+Parameters for evaluation 158:
+                      1.5214197531e-01 R
+                      6.8961111111e-01 S
+                      2.4397119342e-02 F
+
+(Asynchronous job 158 added to queue)
+
+---------------------
+Begin Evaluation  159
+---------------------
+Parameters for evaluation 159:
+                      1.5214197531e-01 R
+                      6.8961111111e-01 S
+                      2.3713991770e-02 F
+
+(Asynchronous job 159 added to queue)
+
+Blocking synchronize of 6 asynchronous evaluations
+First pass: initiating 4 local asynchronous jobs
+Initiating evaluation 154
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Initiating evaluation 155
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Initiating evaluation 156
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Initiating evaluation 157
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Second pass: scheduling 2 remaining local asynchronous jobs
+Waiting on completed jobs
+Evaluation 154 has completed
+Initiating evaluation 158
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Waiting on completed jobs
+Evaluation 157 has completed
+Initiating evaluation 159
+nonblocking fork: python model_command_line_driver_nl2sol1.py params.in results.out
+Waiting on completed jobs
+Evaluation 155 has completed
+Waiting on completed jobs
+Evaluation 156 has completed
+Waiting on completed jobs
+Evaluation 158 has completed
+Waiting on completed jobs
+Evaluation 159 has completed
+
+Active response data for evaluation 154:
+Active set vector = { 1 1 }
+                      2.1231094437e-02 rmse
+                      3.9887629200e-02 rmse_std
+
+
+Active response data for evaluation 155:
+Active set vector = { 1 1 }
+                      2.1585521600e-02 rmse
+                      4.1032683879e-02 rmse_std
+
+
+Active response data for evaluation 156:
+Active set vector = { 1 1 }
+                      2.2293485675e-02 rmse
+                      4.2478981627e-02 rmse_std
+
+
+Active response data for evaluation 157:
+Active set vector = { 1 1 }
+                      2.2318960560e-02 rmse
+                      4.6229285815e-02 rmse_std
+
+
+Active response data for evaluation 158:
+Active set vector = { 1 1 }
+                      2.2559285912e-02 rmse
+                      4.1713304403e-02 rmse_std
+
+
+Active response data for evaluation 159:
+Active set vector = { 1 1 }
+                      2.1757188421e-02 rmse
+                      3.8200502011e-02 rmse_std
+
+Responses:
+2.1231094437e-02
+3.9887629200e-02
+Weights:
+Responses:
+2.1585521600e-02
+4.1032683879e-02
+Weights:
+Responses:
+2.2293485675e-02
+4.2478981627e-02
+Weights:
+Responses:
+2.2318960560e-02
+4.6229285815e-02
+Weights:
+Responses:
+2.2559285912e-02
+4.1713304403e-02
+Weights:
+Responses:
+2.1757188421e-02
+3.8200502011e-02
+Weights:
+NCSU DIRECT succeeded with code 4
+(best rectangle reduced from original volume by prescribed fraction)
+<<<<< Function evaluation summary: 159 total (159 new, 0 duplicate)
+<<<<< Best parameters          =
+                      1.5214197531e-01 R
+                      6.8961111111e-01 S
+                      2.4055555556e-02 F
+<<<<< Best residual terms =
+                      2.2097728363e-02
+                      3.7184096801e-02
+<<<<< Best residual norm =  4.3254672045e-02; 0.5 * norm^2 =  9.3548332685e-04
+<<<<< Best data captured at function evaluation 129
+
+
+<<<<< Iterator ncsu_direct completed.
+<<<<< Environment execution completed.
+DAKOTA execution time in seconds:
+  Total CPU        =   0.306317 [parent =   0.306311, child =      6e-06]
+  Total wall clock =      450.2
