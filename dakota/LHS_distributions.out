@@ -7,12 +7,12 @@
                                              * * * * * * * * * * * * * * * * * * * * * *
 
 
-    Run on  5/26/20 at 15:42:14.32 with LHS Version: 2.30 Release 1, Compiled May 31, 2001        
+    Run on  5/26/20 at 16:32:37.12 with LHS Version: 2.30 Release 1, Compiled May 31, 2001        
 
 
 0    Pecos::LHSDriver
 
-    Random Seed =      319785
+    Random Seed =      127650
 
     Number of Variables =   3
 
@@ -24,6 +24,6 @@
     Pecos::LHSDriver                                                                                                             
 
     VARIABLE  DISTRIBUTION          RANGE            LABEL
-0       1        UNIFORM    1.000E-03 TO  0.250                                                        
+0       1        UNIFORM    1.000E-03 TO  0.500                                                        
 0       2        UNIFORM    1.000E-03 TO   1.00                                                        
 0       3        UNIFORM    1.000E-03 TO  0.250                                                        
