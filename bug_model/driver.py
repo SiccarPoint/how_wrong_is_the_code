@@ -1080,6 +1080,8 @@ if __name__ == "__main__":
     total_commits_from_API = []
     if COUNT_ADDITIONS:
         total_lines_from_API = []
+        mean_lines_per_commit_from_API = []
+        median_lines_per_commit_from_API = []
         bug_find_rate_per_line = []  # i.e., bugs per line
         bugs_per_line_infinite_count = 0  # used for tracking bug finds, no lines added
 
@@ -1118,6 +1120,13 @@ if __name__ == "__main__":
         if COUNT_ADDITIONS:
             total_lines_added = np.sum(additions)
             total_lines_from_API.append(total_lines_added)
+            try:
+                mean_lines_per_commit_from_API.append(
+                    total_lines_added / len(dtimes)
+                )
+            except ZeroDivisionError:
+                mean_lines_per_commit_from_API.append(float('nan'))
+            median_lines_per_commit_from_API.append(np.median(additions))
             try:
                 bug_find_rate_per_line.append(
                     len(times_bugs_fixed) / total_lines_added
@@ -1193,6 +1202,13 @@ if __name__ == "__main__":
         if COUNT_ADDITIONS:
             total_lines_added = np.sum(additions)
             total_lines_from_API.append(total_lines_added)
+            try:
+                mean_lines_per_commit_from_API.append(
+                    total_lines_added / len(dtimes)
+                )
+            except ZeroDivisionError:
+                mean_lines_per_commit_from_API.append(float('nan'))
+            median_lines_per_commit_from_API.append(np.median(additions))
             try:
                 bug_find_rate_per_line.append(
                     len(times_bugs_fixed) / total_lines_added
@@ -1500,3 +1516,5 @@ if __name__ == "__main__":
     hist(commits_of_zero_bug_repos, bins='auto', range=(0, 1000))
     xlabel('Number of commits')
     ylabel('Number of repos')
+
+    # look at the commit line lengths:
