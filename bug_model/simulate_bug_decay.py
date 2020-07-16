@@ -656,9 +656,13 @@ def mcmc_fitter(n_samples=4, n_burn=1):
 if __name__ == "__main__":
     run_type = 'exp'  # {'fixed', 'exp'}
     stochastic = True
-    F_list = (0.019, )
-    R = 0.053 * 2.
-    R_std = 0.0013 * 2
+    # F_list = (0.019, )
+    # R = 0.053 * 2.
+    # R_std = 0.0013 * 2
+    # R_list = ((R, R_std), )
+    F_list = (0.0202, )
+    R = 0.117
+    R_std = R * 0.1
     R_list = ((R, R_std), )
     # F_list = np.linspace(0., 1., 20)
     # Rs_in = np.linspace(0., 1., 20)
@@ -668,7 +672,7 @@ if __name__ == "__main__":
                                            stochastic, plot_figs=True)
         dict_keys = start_bugs
     elif run_type == 'exp':
-        S_list = (1., )#(0.5, 0.6)
+        S_list = (0.484, )#(1., 0.5, 0.6)
         # S_list = (0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.)
         # rate = 0.001 scale ~0.1-0.2 gives interesting responses around the
         # sweet spot where no sensitivity transitions to fits that are
