@@ -1036,6 +1036,18 @@ def repo_lengths_to_file(repo_nameowners):
     return return_dict
 
 
+def repo_total_LOCs(dict_of_repos_lang_lengths):
+    """
+    Takes a dict of dicts {repo: {lang: LOCs}} and returns the dict
+    {repo: total_LOCs}. Note this means repos with only text, TeX etc will
+    get zeros.
+    """
+    repo_lengths = {}
+    for repo, data in dict_of_repos_lang_lengths.items():
+        repo_lengths[repo] = np.sum(list(data.values()))
+    return repo_lengths
+
+
 if __name__ == "__main__":
     topic = 'https://doi.org'  # 'landlab', 'terrainbento', 'physics', 'chemistry', 'https://doi.org', 'biolog'
     # the search for Landlab isn't pulling landlab/landlab as a long repo!? Check
@@ -1044,6 +1056,8 @@ if __name__ == "__main__":
     continue_old_saves = True
     # ^If true, script begins by a fresh call to the API and then a save
     # If false, proceeds with saved data only
+    record_zero_len_repos = False
+    # ^if False, only repos with actual LOCs (not text) get recorded
     if search_fresh:
         approx_desired_repos = 500
         approx_max_commits = 2000
@@ -1078,6 +1092,7 @@ if __name__ == "__main__":
     long_repos = []  # will store [num_commits, nameowner, name, owner]
     coveralls_count = []
     total_commits_from_API = []
+    repo_total_LOC_lengths = []
     if COUNT_ADDITIONS:
         total_lines_from_API = []
         mean_lines_per_commit_from_API = []
@@ -1094,13 +1109,26 @@ if __name__ == "__main__":
         print('Now interrogating long repos. This might be slow...')
         get_process_save_commit_data_long_repos(topic, HEADER,
                                                 max_iters=max_iters_for_commits)
-
+    # get the LOCs:
+    short_reponames = [no for _, no, _, _, _, _, _, _, _, _, _, _,
+                       in load_processed_data_all_repos(topic, 'short')]
+    long_reponames = [no for _, no, _, _, _, _, _, _, _, _, _, _,
+                      in load_processed_data_all_repos(topic, 'long')]
+    all_reponames = short_reponames + long_reponames
+    # we here pick repos that don't exist in the save!?
+    lang_len_dict = repo_lengths_to_file(all_reponames)
+    repo_len_dict = repo_total_LOCs(lang_len_dict)
     # now load and proceed:
     for enum, (
         rep_data, nameowner, name, owner, creation_date,
         last_push_date, commit_page_data, has_next_page,
         commits, total_commits, languages, readme_text
     ) in enumerate(load_processed_data_all_repos(topic, 'short')):
+        repo_LOC_length = repo_len_dict[nameowner]
+        if not record_zero_len_repos:
+            if repo_LOC_length == 0:
+                continue
+        repo_total_LOC_lengths.append(repo_LOC_length)
         badges = look_for_badges(readme_text)
 
         times_bugs_fixed, dtimes, authors, additions = \
@@ -1182,6 +1210,11 @@ if __name__ == "__main__":
         last_push_date, commit_page_data, has_next_page,
         commits, total_commits, languages, readme_text
     ) in enumerate(load_processed_data_all_repos(topic, 'long')):
+        repo_LOC_length = repo_len_dict[nameowner]
+        if not record_zero_len_repos:
+            if repo_LOC_length == 0:
+                continue
+        repo_total_LOC_lengths.append(repo_LOC_length)
         badges = look_for_badges(readme_text)
         commits = long_repo_commit_dict[nameowner]
         print('Successfully loaded ' + str(len(commits)) + ' commits')

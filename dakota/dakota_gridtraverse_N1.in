@@ -1,0 +1,49 @@
+# Dakota input file, uses a moving average approach with a finer scale,
+# combined with a second calibration term based on the std of bug find
+# rates when at low commits (when there is much scatter, and we know N0
+# controls this scatter), i.e., the first exploits the shape and the
+# second exploits the distribution of the response.
+
+# This version iterates on 3 by asking for a more discretised fit to scatter
+# across the sampled space, and tightens some of the bounds - F in particular
+# was pressed into the corner in 3.
+
+# This version is an update of 4b, using the new dataset that is stripped
+# of the text-only repos. We retain the old finely gradated steps over the
+# same interval, as the moving averages look pretty similar.
+
+environment
+  tabular_data
+    tabular_data_file "dakota_gridtraverse_N1.dat"
+
+method
+  multidim_parameter_study
+  partitions 31 31 31
+
+variables
+  continuous_design 3
+  descriptors "R" "S" "F"
+  lower_bounds 0.001 0.001 0.001
+  upper_bounds 0.2 1 0.1
+
+interface
+  fork
+    asynchronous
+    evaluation_concurrency 4
+    parameters_file "params.in"
+    results_file "results.out"
+    copy_files "template_dir/*"
+
+    analysis_driver "python model_command_line_driver4.py"
+
+    work_directory
+      named "MULTIDIM_PARAM_N1/run"
+      directory_tag
+      directory_save
+      file_save
+
+responses
+  calibration_terms 2
+  response_descriptors "rmse" "rmse_std"  # units both just bfr
+  no_gradients
+  no_hessians
