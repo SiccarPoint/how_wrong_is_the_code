@@ -2,6 +2,7 @@ README.md
 setup.py
 bug_model/MCMC_stats_fits.py
 bug_model/__init__.py
+bug_model/bootstrap_model_responses.py
 bug_model/bughunting.py
 bug_model/driver.py
 bug_model/find_grads.pyx
@@ -16,3 +17,13 @@ bug_model.egg-info/dependency_links.txt
 bug_model.egg-info/top_level.txt
 bug_model/header/__init__.py
 bug_model/header/header.py
+dakota/__init__.py
+dakota/dakota_plotters.py
+dakota/drive_dakota_ego1.py
+dakota/template_dir/__init__.py
+dakota/template_dir/model_command_line_driver.py
+dakota/template_dir/model_command_line_driver2.py
+dakota/template_dir/model_command_line_driver3.py
+dakota/template_dir/model_command_line_driver4.py
+dakota/template_dir/model_command_line_driver_ego4.py
+dakota/template_dir/model_command_line_driver_nl2sol1.py
